@@ -1,0 +1,2309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>X-Section Auto App</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root { --bg-color: #eef2f5; --card-bg: #fff; --text-color: #333; --header-bg: #004d40; --border-color: #ddd; --input-bg: #fff; }
+        [data-theme="dark"] { --bg-color: #121212; --card-bg: #1e1e1e; --text-color: #e0e0e0; --header-bg: #024a42; --border-color: #444; --input-bg: #2c2c2c; }
+        @page { size: A4 landscape; margin-top: 0.75in; margin-bottom: 0.75in; margin-left: 0.20in; margin-right: 0.20in; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); margin: 0; padding: 0; color: var(--text-color); transition: 0.3s; }
+        .header { background-color: var(--header-bg); color: white; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .header-brand { display: flex; align-items: center; gap: 12px; }
+        .header-brand img { height: 40px; width: auto; max-width: 120px; object-fit: contain; }
+        .header h1 { margin: 0; font-size: 22px; }
+        .top-controls { display: flex; gap: 10px; align-items: center; }
+        .top-controls select, .top-controls button { padding: 8px; border-radius: 4px; border: none; cursor: pointer; }
+        .container { max-width: 1650px; margin: 15px auto; padding: 0 15px; }
+        .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; }
+        .grid-4 > .card { min-width: 0; }
+        @media (max-width: 650px) { .grid-4 { grid-template-columns: 1fr; } }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+        .grid-2 > .card { min-width: 0; }
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+        .card { background: var(--card-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.08); margin-bottom: 0px; box-sizing: border-box; border: 1px solid var(--border-color); }
+        .card-sm { padding: 10px 12px; }
+        .card-sm h3 { font-size: 13px; font-weight: 700; padding-bottom: 5px; margin-bottom: 8px; color: var(--header-bg); margin-top: 0; letter-spacing: 0.2px; }
+        .card-sm label { font-size: 10px; margin-bottom: 2px; }
+        .card-sm input[type="text"], .card-sm input[type="number"], .card-sm select { padding: 4px 5px; font-size: 10px; height: 26px; }
+        .card-sm table { width: 100%; margin-top: 0; border-collapse: separate; border-spacing: 2px; }
+        .card-sm table th, .card-sm table td { padding: 3px 2px; font-size: 11px; text-align: center; }
+        .card-sm table th { background: #eaeff2; color: #1a252c; font-weight: 700; border: 1px solid var(--border-color); position: sticky; top: 0; z-index: 2; font-size: 11px; }
+        [data-theme="dark"] .card-sm table th { background: #253338; color: #e0e0e0; }
+        .card-sm table td input { width: 100%; box-sizing: border-box; background: var(--input-bg); border: 1px solid var(--border-color); border-radius: 4px; padding: 3px 5px; font-size: 11px; font-family: 'Consolas', 'Courier New', monospace; color: var(--text-color); text-align: center; height: 26px; transition: border-color 0.15s, box-shadow 0.15s; }
+        .card-sm table td input:focus { border-color: #0056b3; outline: none; box-shadow: 0 0 0 2px rgba(0,86,179,0.2); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px; }
+        input[type="text"], input[type="number"], select, textarea { width: 100%; padding: 8px; border: 1px solid var(--border-color); border-radius: 4px; box-sizing: border-box; font-family: monospace; background: var(--input-bg); color: var(--text-color); }
+        textarea { resize: vertical; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid var(--border-color); padding: 6px; text-align: center; font-size: 13px; }
+        th { background-color: var(--bg-color); }
+        .btn { color: white; border: none; padding: 12px; font-size: 16px; cursor: pointer; border-radius: 4px; font-weight: bold; text-align: center; width: 100%; margin-bottom: 10px; }
+        .btn-green { background-color: #28a745; } .btn-green:hover { background-color: #218838; }
+        .btn-blue { background-color: #0056b3; } .btn-blue:hover { background-color: #004494; }
+        .btn-red { background-color: #dc3545; } .btn-red:hover { background-color: #c82333; }
+        .btn-gray { background-color: #6c757d; } .btn-gray:hover { background-color: #5a6268; }
+        .btn-danger { background-color: #dc3545; width: auto; padding: 8px 16px; font-size: 14px; margin: 0; }
+        .btn-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-top: 15px; }
+        .action-card { grid-column: 1 / -1; margin: 10px 0; padding: 18px 24px; background: var(--card-bg); border-radius: 8px; box-shadow: 0 3px 10px rgba(0,0,0,0.08); border: 1px solid var(--border-color); text-align: center; }
+        .action-btn-group { display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap; }
+        .action-btn { width: auto; min-width: 200px; max-width: 280px; flex: 1; margin-bottom: 0 !important; padding: 12px 24px; font-size: 15px; letter-spacing: 0.3px; box-shadow: 0 2px 5px rgba(0,0,0,0.12); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .action-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 12px rgba(0,0,0,0.18); }
+        .paste-box { background: var(--bg-color); padding: 10px; border: 1px dashed var(--border-color); margin-bottom: 10px; }
+        .paste-box textarea { font-family: 'Consolas', 'Courier New', monospace; font-size: 14px; font-weight: 500; line-height: 1.8; padding: 10px; }
+        #canalPaste, #divPaste { tab-size: 11; -moz-tab-size: 11; overflow-x: hidden; white-space: pre; }
+        #existingData { tab-size: 22; -moz-tab-size: 22; overflow-x: auto; white-space: pre; }
+        textarea::placeholder { color: #aaa; opacity: 0.75; font-style: italic; }
+        .icon-upload-btn { cursor: pointer; background: var(--header-bg); color: white; padding: 6px 14px; border-radius: 4px; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; transition: 0.2s; font-weight: normal; user-select: none; }
+        .icon-upload-btn:hover { opacity: 0.9; }
+        body[dir="rtl"] { text-align: right; }
+        .data-band-cell { writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; height: 48px; padding: 2px 0; font-size: 9px; font-family: 'Consolas', monospace; font-weight: bold; display: flex; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-brand">
+        <img src="IA Logo.png" alt="Brand Logo">
+        <h1 id="appTitle">X-Section Auto App</h1>
+    </div>
+    <div class="top-controls">
+        <button id="themeBtn" onclick="toggleTheme()" style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg> Dark
+        </button>
+        <button class="btn-danger" onclick="clearAllData()" id="clearBtn" style="display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg> Clear All
+        </button>
+    </div>
+</div>
+<div class="container">
+    <!-- Row 1 & Row 2: 4 Small Boxes per Row (Boxes 1 to 8) -->
+    <div class="grid-4">
+        <!-- 1. Categories -->
+        <div class="card card-sm">
+            <h3>1. Categories</h3>
+            <div class="form-group">
+                <label>Canal Name:</label>
+                <input type="text" id="canalName" value="CANAL NAME" placeholder="Enter Canal Name">
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+                <label>Select Section:</label>
+                <select id="sectionType" onchange="updateSlopesTable()">
+                    <option value="Earthen Section">Earthen Section</option>
+                    <option value="Lining Section">Lining Section</option>
+                    <option value="Side Protection">Side Protection</option>
+                    <option value="Pitching Section">Pitching Section</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 2. Diversion -->
+        <div class="card card-sm">
+            <h3>2. Diversion</h3>
+            <div id="card4_body">
+                <div class="form-group">
+                    <label>Is Diversion Required?</label>
+                    <select id="div_req" onchange="toggleDiversion()">
+                        <option value="FALSE">NO</option>
+                        <option value="TRUE">YES</option>
+                    </select>
+                </div>
+                <div class="form-group" id="div_side_group">
+                    <label>Diversion Side:</label>
+                    <select id="div_side">
+                        <option value="Right">Right</option>
+                        <option value="Left">Left</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Slopes (V:H) -->
+        <div class="card card-sm">
+            <h3>3. Slopes (H:V)</h3>
+            <table id="slopesTable">
+                <thead>
+                    <tr><th>Type</th><th>H</th><th>V</th></tr>
+                </thead>
+                <tbody>
+                    <tr id="row_slp_cb"><td>Channel Banks</td><td><input type="number" value="1.5" id="slp_cb_h"></td><td><input type="number" value="1" id="slp_cb_v"></td></tr>
+                    <tr id="row_slp_is"><td id="lbl_slp_is">Inner Slope</td><td><input type="number" value="1.5" id="slp_is_h"></td><td><input type="number" value="1" id="slp_is_v"></td></tr>
+                    <tr id="row_slp_db"><td id="lbl_slp_db">Diversion Inner Slope</td><td><input type="number" value="1.5" id="slp_db_h"></td><td><input type="number" value="1" id="slp_db_v"></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 4. Dowel -->
+        <div class="card card-sm">
+            <h3>4. Dowel</h3>
+            <div id="dowel_body">
+                <div class="form-group">
+                    <label>Is Dowel Required?</label>
+                    <select id="dowel_req" onchange="toggleDowel()">
+                        <option value="FALSE">NO</option>
+                        <option value="TRUE">YES</option>
+                    </select>
+                </div>
+                <div id="dowel_params_group" style="display: none;">
+                    <div class="form-group">
+                        <label>Dowel Side:</label>
+                        <select id="dowel_side">
+                            <option value="Left">Left</option>
+                            <option value="Right">Right</option>
+                            <option value="Both">Both</option>
+                        </select>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 6px;">
+                        <div class="form-group" style="margin:0;">
+                            <label style="font-size:10px;">Top Width:</label>
+                            <input type="number" id="dowel_top_width" value="1.25" step="0.05" placeholder="1.25">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label style="font-size:10px;">Height:</label>
+                            <input type="number" id="dowel_height" value="1.25" step="0.05" placeholder="1.25">
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label style="font-size:10px;">Side Slope:</label>
+                            <input type="number" id="dowel_slope" value="1.5" step="0.1" placeholder="1.5">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Bank Widths -->
+        <div class="card card-sm">
+            <h3>5. Bank Widths</h3>
+            <table>
+                <tr>
+                    <th id="th_bw_left">Left Bank</th>
+                    <th id="th_bw_right">Right Bank</th>
+                    <th id="th_bw_common">Common</th>
+                    <th id="th_bw_diversion">Diversion</th>
+                </tr>
+                <tr>
+                    <td id="td_bw_left"><input type="number" value="12.00" id="bw_left"></td>
+                    <td id="td_bw_right"><input type="number" value="17.00" id="bw_right"></td>
+                    <td id="td_bw_common"><input type="number" value="12.00" id="bw_common"></td>
+                    <td id="td_bw_diversion"><input type="number" value="8.00" id="bw_diversion"></td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- 6. Free Board -->
+        <div class="card card-sm">
+            <h3>6. Free Board</h3>
+            <div id="fb_single_container">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label style="font-weight: bold; font-size: 11px; margin-bottom: 4px;">Free Board (ft):</label>
+                    <input type="number" value="1.50" id="freeboard" step="0.1" placeholder="1.50" onchange="saveData()">
+                </div>
+            </div>
+            <div id="fb_split_container" style="display: none;">
+                <div class="form-group">
+                    <label style="font-weight: bold; font-size: 11px; margin-bottom: 4px;">FSL to Lining Top (ft):</label>
+                    <input type="number" value="1.00" id="fb_fsl_lining" step="0.05" placeholder="1.00" oninput="updateCombinedFreeboard(); saveData();" onchange="saveData()">
+                </div>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label style="font-weight: bold; font-size: 11px; margin-bottom: 4px;">Lining Top to Bank Top (ft):</label>
+                    <input type="number" value="0.50" id="fb_lining_bank" step="0.05" placeholder="0.50" oninput="updateCombinedFreeboard(); saveData();" onchange="saveData()">
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. Berm Width -->
+        <div class="card card-sm" id="bermWidthCard">
+            <h3>7. Berm Width</h3>
+            <div class="form-group">
+                <label>Is Berm Required?</label>
+                <select id="berm_req" onchange="toggleBermWidth(); saveData();">
+                    <option value="YES" selected>YES</option>
+                    <option value="NO">NO</option>
+                </select>
+            </div>
+            <div class="form-group" id="bermMultiplierGroup" style="margin-bottom: 0;">
+                <label>Berm Multiplier:</label>
+                <select id="bermMultiplier" onchange="saveData()" style="padding: 5px;">
+                    <option value="1-D">1-D</option>
+                    <option value="1.5-D" selected>1.5-D</option>
+                    <option value="2-D">2-D</option>
+                    <option value="2.5-D">2.5-D</option>
+                    <option value="3-D">3-D</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 8. Signatures -->
+        <div class="card card-sm">
+            <h3>8. Signatures</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;">
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size:10px;">Project Name:</label>
+                    <input type="text" id="projName" value="CANAL IMPROVEMENT WORKS" placeholder="Project Name">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size:10px;">File No / Ref:</label>
+                    <input type="text" id="projNo" value="" placeholder="File No">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size:10px;">Sub Engineer:</label>
+                    <input type="text" id="subEngineer" value="" placeholder="Sub Engineer Name">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size:10px;">SDO / Sub Division:</label>
+                    <input type="text" id="sdoName" value="" placeholder="SDO Name / Sub Division">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size:10px;">XEN / Division:</label>
+                    <input type="text" id="xenName" value="" placeholder="XEN Name / Division">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label style="font-size:10px;">Dept / Designation:</label>
+                    <input type="text" id="deptName" value="IRRIGATION DIVISION" placeholder="Dept / Designation">
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 3: 2 Boxes Side-by-Side (Compact Height) -->
+    <div class="grid-2">
+        <!-- 9. Design Calculation Data Input -->
+        <div class="card card-sm" style="margin-bottom: 0;">
+            <h3>9. Design Calculation Data Input</h3>
+            <div class="paste-box" style="margin-bottom: 0; padding: 8px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                    <label style="font-weight: bold; margin: 0; font-size: 11px;">Upload Excel/CSV or Paste Canal Design Data:</label>
+                    <div style="display: flex; gap: 6px; align-items: center;">
+                        <label for="canalFile" title="Upload Excel or CSV File" class="icon-upload-btn" style="margin: 0; padding: 4px 8px; font-size: 11px;">
+                            📁 <span style="font-weight: bold;">Upload File</span>
+                            <input type="file" id="canalFile" accept=".xlsx,.xls,.csv" onchange="handleExcelUpload(event, 'canalPaste', 'canalDesignTable')" style="display: none;">
+                        </label>
+                        <button onclick="clearCanalDesignData()" title="Delete Design Data" style="padding: 4px 10px; font-size: 11px; font-weight: bold; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 2px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg> Delete
+                        </button>
+                    </div>
+                </div>
+                <div style="background: var(--header-bg); color: white; border: 1px solid var(--border-color); border-bottom: none; border-radius: 4px 4px 0 0; padding: 4px 8px; font-weight: bold; font-size: 11px; display: grid; grid-template-columns: repeat(6, 1fr); text-align: center; gap: 2px;">
+                    <span>From RD</span>
+                    <span>To RD</span>
+                    <span>Bed Level</span>
+                    <span>Bed Width</span>
+                    <span>FSD</span>
+                    <span>Slope</span>
+                </div>
+                <textarea id="canalPaste" rows="4" placeholder="0&#9;21800&#9;534.50&#9;32.00&#9;4.00&#9;0.000100&#10;21800&#9;32300&#9;532.06&#9;30.00&#9;3.80&#9;0.000200" style="border-radius: 0 0 4px 4px; margin-bottom: 6px; min-height: 120px; padding: 6px; font-size: 12px;"></textarea>
+                <button class="btn btn-gray" onclick="loadDesignData('canalPaste', 'canalDesignTable')" style="padding: 6px; font-size: 13px; margin-bottom: 0;">Load Data</button>
+            </div>
+        </div>
+
+        <!-- 10. Design Calculation Table -->
+        <div class="card card-sm" style="margin-bottom: 0;">
+            <h3>10. Design Calculation Table</h3>
+            <div style="max-height: 175px; overflow-y: auto; overflow-x: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--card-bg);">
+                <table id="canalDesignTable" style="margin: 0; width: 100%;">
+                    <tr style="position: sticky; top: 0; background: #eaeff2; z-index: 2;"><th>From RD</th><th>To RD</th><th>Bed Level</th><th>Bed Width</th><th>FSD</th><th>Slope</th></tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 4: 2 Boxes Side-by-Side (Compact Height) -->
+    <div class="grid-2" id="diversionSectionGroup">
+        <!-- 11. Diversion Data Input -->
+        <div class="card card-sm" id="card_div_11" style="margin-bottom: 0;">
+            <h3>11. Diversion Data Input</h3>
+            <div id="div11_body">
+                <div class="paste-box" style="margin-bottom: 0; padding: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <label style="font-weight: bold; margin: 0; font-size: 11px;">Upload Excel/CSV or Paste Diversion Data:</label>
+                        <label for="divFile" title="Upload Excel or CSV File" class="icon-upload-btn" style="padding: 4px 8px; font-size: 11px;">
+                            📁 <span style="font-weight: bold;">Upload File</span>
+                            <input type="file" id="divFile" accept=".xlsx,.xls,.csv" onchange="handleExcelUpload(event, 'divPaste', 'diversionDesignTable')" style="display: none;">
+                        </label>
+                    </div>
+                    <div style="background: var(--header-bg); color: white; border: 1px solid var(--border-color); border-bottom: none; border-radius: 4px 4px 0 0; padding: 4px 8px; font-weight: bold; font-size: 11px; display: grid; grid-template-columns: repeat(6, 1fr); text-align: center; gap: 2px;">
+                        <span>From RD</span>
+                        <span>To RD</span>
+                        <span>Bed Level</span>
+                        <span>Bed Width</span>
+                        <span>FSD</span>
+                        <span>Slope</span>
+                    </div>
+                    <textarea id="divPaste" rows="4" placeholder="0&#9;5000&#9;535.00&#9;10.00&#9;4.00&#9;0.000100" style="border-radius: 0 0 4px 4px; margin-bottom: 6px; min-height: 120px; padding: 6px; font-size: 12px;"></textarea>
+                    <button class="btn btn-gray" onclick="loadDesignData('divPaste', 'diversionDesignTable')" style="padding: 6px; font-size: 13px; margin-bottom: 0;">Load Data</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 12. Diversion Design Table -->
+        <div class="card card-sm" id="card_div_12" style="margin-bottom: 0;">
+            <h3>12. Diversion Design Table</h3>
+            <div id="div12_body">
+                <div style="max-height: 175px; overflow-y: auto; overflow-x: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--card-bg);">
+                    <table id="diversionDesignTable" style="margin: 0; width: 100%;">
+                        <tr style="position: sticky; top: 0; background: #eaeff2; z-index: 2;"><th>From RD</th><th>To RD</th><th>Bed Level</th><th>Bed Width</th><th>FSD</th><th>Slope</th></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 5: 2 Boxes Side-by-Side (Compact Height) -->
+    <div class="grid-2">
+        <!-- 13. Survey Data Input -->
+        <div class="card card-sm" style="margin-bottom: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--header-bg); padding-bottom: 5px; margin-bottom: 8px;">
+                <h3 style="margin: 0; border: none; padding: 0;">13. Survey Data Input</h3>
+                <div style="display: flex; gap: 6px; align-items: center;">
+                    <label for="existingFile" title="Upload Excel or CSV File" class="icon-upload-btn" style="margin: 0; padding: 4px 8px; font-size: 11px;">
+                        📄 <span style="font-weight: bold;">Upload File</span>
+                        <input type="file" id="existingFile" accept=".xlsx,.xls,.csv" onchange="handleSurveyUpload(event, 'existingData')" style="display: none;">
+                    </label>
+                    <button onclick="clearSurveyData()" title="Delete Survey Data" style="padding: 4px 10px; font-size: 11px; font-weight: bold; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">🗑️ Delete</button>
+                </div>
+            </div>
+            <div class="paste-box" style="margin-bottom: 0; padding: 8px;">
+                <div style="background: var(--header-bg); color: white; border: 1px solid var(--border-color); border-bottom: none; border-radius: 4px 4px 0 0; padding: 4px 8px; font-family: 'Consolas', 'Courier New', monospace; font-size: 11px; font-weight: bold; white-space: pre; tab-size: 22; -moz-tab-size: 22; letter-spacing: 0.5px;">RD&#9;LEVEL&#9;DISTANCE</div>
+                <textarea id="existingData" rows="4" wrap="off" placeholder="0+000&#9;538.50&#9;-10&#10;0+000&#9;537.00&#9;0&#10;0+000&#9;538.60&#9;10" style="border-radius: 0 0 4px 4px; margin-bottom: 6px; min-height: 120px; padding: 6px; font-size: 12px;"></textarea>
+                <button class="btn btn-gray" onclick="loadXSectionData()" style="padding: 6px; font-size: 13px; margin-bottom: 0;">Load Data</button>
+            </div>
+        </div>
+
+        <!-- 14. Survey Data Table -->
+        <div class="card card-sm" style="margin-bottom: 0;">
+            <h3>14. Survey Data Table</h3>
+            <div id="xSectionVerifyBox">
+                <div style="display: flex; justify-content: space-between; align-items: center; background: #eaeff2; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border-color); margin-bottom: 8px;">
+                    <div style="font-weight: bold; color: var(--header-bg); display: flex; align-items: center; gap: 8px; font-size: 11px;">
+                        <span>RD Data:</span>
+                        <select id="rdSelector" onchange="jumpToRD(this.value)" style="padding: 3px 6px; width: auto; font-weight: bold; font-size: 11px; height: 26px; border-radius: 4px; border: 1px solid var(--border-color); background: var(--input-bg); color: var(--text-color);"></select>
+                        <span id="rdCounterInfo" style="font-size: 11px; color: #666; font-weight: bold;"></span>
+                    </div>
+                    <div style="display: flex; gap: 6px;">
+                        <button onclick="prevRD()" style="padding: 4px 12px; font-size: 11px; font-weight: bold; background: #0056b3; color: white; border: none; border-radius: 4px; cursor: pointer; transition: 0.2s;">◀ Prev</button>
+                        <button onclick="nextRD()" style="padding: 4px 12px; font-size: 11px; font-weight: bold; background: #0056b3; color: white; border: none; border-radius: 4px; cursor: pointer; transition: 0.2s;">Next ▶</button>
+                    </div>
+                </div>
+                <div style="max-height: 175px; overflow-y: auto; overflow-x: auto; border: 1px solid var(--border-color); border-radius: 4px; background: var(--card-bg);">
+                    <table style="margin: 0; width: 100%;">
+                        <thead>
+                            <tr style="position: sticky; top: 0; background: #eaeff2; z-index: 2;">
+                                <th>RD</th><th>LEVEL</th><th>DISTANCE</th>
+                            </tr>
+                        </thead>
+                        <tbody id="singleRDTbody">
+                            <tr><td colspan="3" style="text-align:center; padding:15px; color:#888; font-style:italic;">No Survey Data Loaded</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 15. Cut & Fill Report (Area in SFT) -->
+    <div class="card" style="margin-top: 15px; margin-bottom: 20px;">
+        <h3>15. Cut & Fill Report (Area in SFT)</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 11px; text-align: left; background: var(--input-bg);">
+            <tr>
+                <td style="border: 1px solid var(--border-color); padding: 4px 5px;"><label style="display: flex; align-items: center; gap: 5px; margin: 0; cursor: pointer;"><input type="checkbox" id="chk_bed_cut" checked onchange="processBatch(true)"> Bed Cutting</label></td>
+                <td style="border: 1px solid var(--border-color); padding: 4px 5px;"><label style="display: flex; align-items: center; gap: 5px; margin: 0; cursor: pointer;"><input type="checkbox" id="chk_lb_cut" checked onchange="processBatch(true)"> Left Bank Cut</label></td>
+                <td style="border: 1px solid var(--border-color); padding: 4px 5px;"><label style="display: flex; align-items: center; gap: 5px; margin: 0; cursor: pointer;"><input type="checkbox" id="chk_rb_cut" checked onchange="processBatch(true)"> Right Bank Cut</label></td>
+                <td style="border: 1px solid var(--border-color); padding: 4px 5px;"><label style="display: flex; align-items: center; gap: 5px; margin: 0; cursor: pointer;"><input type="checkbox" id="chk_ld_cut" checked onchange="processBatch(true)"> Left Divirsion Cut</label></td>
+                <td style="border: 1px solid var(--border-color); padding: 4px 5px;"><label style="display: flex; align-items: center; gap: 5px; margin: 0; cursor: pointer;"><input type="checkbox" id="chk_rd_cut" checked onchange="processBatch(true)"> Right Divirsion Cut</label></td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid var(--border-color); padding: 4px 5px;"><label style="display: flex; align-items: center; gap: 5px; margin: 0; cursor: pointer;"><input type="checkbox" id="chk_bed_fill" checked onchange="processBatch(true)"> Bed Filling</label></td>
+                <td style="border: 1px solid var(--border-color); padding: 4px 5px;"><label style="display: flex; align-items: center; gap: 5px; margin: 0; cursor: pointer;"><input type="checkbox" id="chk_lb_fill" checked onchange="processBatch(true)"> Left Bank Fill</label></td>
+                <td style="border: 1px solid var(--border-color); padding: 4px 5px;"><label style="display: flex; align-items: center; gap: 5px; margin: 0; cursor: pointer;"><input type="checkbox" id="chk_rb_fill" checked onchange="processBatch(true)"> Right Bank Fill</label></td>
+                <td style="border: 1px solid var(--border-color); padding: 4px 5px;"><label style="display: flex; align-items: center; gap: 5px; margin: 0; cursor: pointer;"><input type="checkbox" id="chk_ld_fill" checked onchange="processBatch(true)"> Left Divirsion Fill</label></td>
+                <td style="border: 1px solid var(--border-color); padding: 4px 5px;"><label style="display: flex; align-items: center; gap: 5px; margin: 0; cursor: pointer;"><input type="checkbox" id="chk_rd_fill" checked onchange="processBatch(true)"> Right Divirsion Fill</label></td>
+            </tr>
+        </table>
+        <div style="height: 250px; overflow-y: auto; overflow-x: auto; border: 1px solid var(--border-color); border-radius: 4px;">
+            <table id="reportTable" style="margin: 0; width: 100%; font-size: 11px; text-align: center;">
+                <tr>
+                    <th rowspan="2" style="position: sticky; top: 0; background: var(--bg-color); z-index: 2;">RD</th>
+                    <th colspan="2" style="position: sticky; top: 0; background: var(--bg-color); z-index: 2;">Bed/Prism</th>
+                    <th colspan="2" style="position: sticky; top: 0; background: var(--bg-color); z-index: 2;">Left Bank</th>
+                    <th colspan="2" style="position: sticky; top: 0; background: var(--bg-color); z-index: 2;">Right Bank</th>
+                    <th colspan="2" style="position: sticky; top: 0; background: var(--bg-color); z-index: 2;">Left Diversion</th>
+                    <th colspan="2" style="position: sticky; top: 0; background: var(--bg-color); z-index: 2;">Right Diversion</th>
+                </tr>
+                <tr>
+                    <th style="position: sticky; top: 25px; background: var(--bg-color); z-index: 2;">Cut</th>
+                    <th style="position: sticky; top: 25px; background: var(--bg-color); z-index: 2;">Fill</th>
+                    <th style="position: sticky; top: 25px; background: var(--bg-color); z-index: 2;">Cut</th>
+                    <th style="position: sticky; top: 25px; background: var(--bg-color); z-index: 2;">Fill</th>
+                    <th style="position: sticky; top: 25px; background: var(--bg-color); z-index: 2;">Cut</th>
+                    <th style="position: sticky; top: 25px; background: var(--bg-color); z-index: 2;">Fill</th>
+                    <th style="position: sticky; top: 25px; background: var(--bg-color); z-index: 2;">Cut</th>
+                    <th style="position: sticky; top: 25px; background: var(--bg-color); z-index: 2;">Fill</th>
+                    <th style="position: sticky; top: 25px; background: var(--bg-color); z-index: 2;">Cut</th>
+                    <th style="position: sticky; top: 25px; background: var(--bg-color); z-index: 2;">Fill</th>
+                </tr>
+                <tr><td colspan="11" style="color: #666;">Data process karne par yahan report aayega...</td></tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- 4 Action Control Buttons Row (Floating centered without card background) -->
+    <div style="margin: 20px 0 30px 0; text-align: center;">
+        <div style="display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap;">
+            <button class="btn btn-green action-btn" onclick="processBatch()">Generate & Calculate</button>
+            <button class="btn btn-blue action-btn" onclick="downloadExcel()">Download Excel</button>
+            <button class="btn btn-red action-btn" onclick="downloadPDF()">Download PDF</button>
+            <button class="btn btn-blue action-btn" onclick="downloadDXF()">Download DXF</button>
+        </div>
+    </div>
+
+    <!-- 16. Graphical X-Section Preview -->
+    <div class="card" style="margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--header-bg); padding-bottom: 10px; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+            <h3 style="margin: 0; border: none; padding: 0;">16. Graphical X-Section Preview</h3>
+            <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <span style="font-weight: bold; color: var(--header-bg); font-size: 13px;">Search / Select RD:</span>
+                <select id="previewRdSelector" onchange="jumpToPreviewRD(this.value)" style="padding: 5px 10px; width: auto; font-weight: bold; font-size: 13px; border: 1px solid var(--border-color); border-radius: 4px;"></select>
+                <span id="previewCounterInfo" style="font-size: 12px; color: #666; font-weight: bold;"></span>
+                <button onclick="prevPreviewRD()" style="padding: 6px 14px; font-size: 13px; font-weight: bold; background: #0056b3; color: white; border: none; border-radius: 5px; cursor: pointer;">◀ Prev X-Section</button>
+                <button onclick="nextPreviewRD()" style="padding: 6px 14px; font-size: 13px; font-weight: bold; background: #0056b3; color: white; border: none; border-radius: 5px; cursor: pointer;">Next X-Section ▶</button>
+            </div>
+        </div>
+        <div id="previewContainer" style="display: flex; flex-direction: column; align-items: center; min-height: 450px; justify-content: center;">
+            <p style="color: #666;">Data paste kar ke Generate par click karein.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+let processedSections = [];
+
+function saveData() {
+    let fields = ['canalName', 'sectionType', 'div_req', 'div_side', 'slp_cb_v', 'slp_cb_h', 'slp_is_v', 'slp_is_h', 'slp_db_v', 'slp_db_h', 'dowel_req', 'dowel_side', 'dowel_top_width', 'dowel_height', 'dowel_slope', 'bw_left', 'bw_right', 'bw_common', 'bw_diversion', 'freeboard', 'fb_fsl_lining', 'fb_lining_bank', 'berm_req', 'bermMultiplier', 'projName', 'projNo', 'subEngineer', 'sdoName', 'xenName', 'deptName'];
+    let data = {};
+    fields.forEach(id => {
+        let el = document.getElementById(id);
+        if (el) data[id] = el.value;
+    });
+    localStorage.setItem('canalAppData', JSON.stringify(data));
+}
+
+function loadData() {
+    let saved = localStorage.getItem('canalAppData');
+    if (!saved) return;
+    try {
+        let d = JSON.parse(saved);
+        for (let k in d) {
+            let el = document.getElementById(k);
+            if (el && d[k] !== undefined) el.value = d[k];
+        }
+        updateSlopesTable();
+        toggleDowel();
+    } catch(e) {}
+}
+
+function renderReportTable() {
+    let t = document.getElementById('reportTable');
+    if (!t) return;
+    let sec = document.getElementById('sectionType').value;
+    let dR = document.getElementById('div_req').value;
+    let isDiv = (sec !== "Earthen Section" && dR === "TRUE");
+
+    let chk = {
+        bc: (document.getElementById('chk_bed_cut') || {}).checked,
+        bf: (document.getElementById('chk_bed_fill') || {}).checked,
+        lbc: (document.getElementById('chk_lb_cut') || {}).checked,
+        lbf: (document.getElementById('chk_lb_fill') || {}).checked,
+        rbc: (document.getElementById('chk_rb_cut') || {}).checked,
+        rbf: (document.getElementById('chk_rb_fill') || {}).checked,
+        ldc: (document.getElementById('chk_ld_cut') || {}).checked,
+        ldf: (document.getElementById('chk_ld_fill') || {}).checked,
+        rdc: (document.getElementById('chk_rd_cut') || {}).checked,
+        rdf: (document.getElementById('chk_rd_fill') || {}).checked
+    };
+
+    let bedCols = (chk.bc?1:0) + (chk.bf?1:0);
+    let lbCols = (chk.lbc?1:0) + (chk.lbf?1:0);
+    let rbCols = (chk.rbc?1:0) + (chk.rbf?1:0);
+    let ldCols = (chk.ldc?1:0) + (chk.ldf?1:0);
+    let rdCols = (chk.rdc?1:0) + (chk.rdf?1:0);
+
+    let h = '<tr><th rowspan="2">RD</th>';
+    if(bedCols > 0) h += `<th colspan="${bedCols}">Bed/Prism</th>`;
+    if(lbCols > 0) h += `<th colspan="${lbCols}">Left Bank</th>`;
+    if(rbCols > 0) h += `<th colspan="${rbCols}">Right Bank</th>`;
+    if(isDiv) {
+        if(ldCols > 0) h += `<th colspan="${ldCols}">Left Diversion</th>`;
+        if(rdCols > 0) h += `<th colspan="${rdCols}">Right Diversion</th>`;
+    }
+    h += '</tr><tr>';
+    if(chk.bc) h += '<th>Cut</th>'; if(chk.bf) h += '<th>Fill</th>';
+    if(chk.lbc) h += '<th>Cut</th>'; if(chk.lbf) h += '<th>Fill</th>';
+    if(chk.rbc) h += '<th>Cut</th>'; if(chk.rbf) h += '<th>Fill</th>';
+    if(isDiv) {
+        if(chk.ldc) h += '<th>Cut</th>'; if(chk.ldf) h += '<th>Fill</th>';
+        if(chk.rdc) h += '<th>Cut</th>'; if(chk.rdf) h += '<th>Fill</th>';
+    }
+    h += '</tr>';
+
+    let totalCols = 1 + bedCols + lbCols + rbCols + (isDiv ? ldCols + rdCols : 0);
+
+    if (processedSections.length === 0) {
+        h += `<tr><td colspan="${totalCols}" style="color: #666;">Data process karne par yahan report aayega...</td></tr>`;
+    } else {
+        processedSections.forEach(s => {
+            h += `<tr><td><b>${s.rd}</b></td>`;
+            if(chk.bc) h += `<td>${s.areas.bed.cut.toFixed(3)}</td>`;
+            if(chk.bf) h += `<td>${s.areas.bed.fill.toFixed(3)}</td>`;
+            if(chk.lbc) h += `<td>${s.areas.lb.cut.toFixed(3)}</td>`;
+            if(chk.lbf) h += `<td>${s.areas.lb.fill.toFixed(3)}</td>`;
+            if(chk.rbc) h += `<td>${s.areas.rb.cut.toFixed(3)}</td>`;
+            if(chk.rbf) h += `<td>${s.areas.rb.fill.toFixed(3)}</td>`;
+            if(isDiv) {
+                if(chk.ldc) h += `<td>${s.areas.ld.cut.toFixed(3)}</td>`;
+                if(chk.ldf) h += `<td>${s.areas.ld.fill.toFixed(3)}</td>`;
+                if(chk.rdc) h += `<td>${s.areas.rd.cut.toFixed(3)}</td>`;
+                if(chk.rdf) h += `<td>${s.areas.rd.fill.toFixed(3)}</td>`;
+            }
+            h += '</tr>';
+        });
+    }
+    t.innerHTML = h;
+}
+
+let currentPreviewIndex = 0;
+let previewChartInstance = null;
+
+function renderPreviews() {
+    let c = document.getElementById('previewContainer');
+    if (!c) return;
+    
+    if (processedSections.length === 0) {
+        c.innerHTML = '<p style="color:#666;">Generate par click karein.</p>';
+        let sel = document.getElementById('previewRdSelector');
+        if (sel) sel.innerHTML = '';
+        let info = document.getElementById('previewCounterInfo');
+        if (info) info.innerText = '';
+        return;
+    }
+
+    if (currentPreviewIndex < 0) currentPreviewIndex = 0;
+    if (currentPreviewIndex >= processedSections.length) currentPreviewIndex = processedSections.length - 1;
+
+    populatePreviewRDSelector();
+    renderSingleChart(currentPreviewIndex);
+}
+
+function populatePreviewRDSelector() {
+    let sel = document.getElementById('previewRdSelector');
+    if (!sel) return;
+    sel.innerHTML = '';
+    processedSections.forEach((s, idx) => {
+        let opt = document.createElement('option');
+        opt.value = idx;
+        opt.innerText = "RD: " + s.rd;
+        sel.appendChild(opt);
+    });
+}
+
+// Helper: interpolate y at x from sorted pts; returns null if x is out of range
+function getInterpolatedY(pts, x) {
+    if (!pts || pts.length === 0) return null;
+    let sorted = [...pts].sort((a, b) => a.x - b.x);
+    if (x < sorted[0].x - 0.01 || x > sorted[sorted.length - 1].x + 0.01) return null;
+    return interpolateY(sorted, x);
+}
+
+// ─── Shared canvas X-Section drawing function (used for both Preview and PDF) ───
+function drawXSectionCanvas(canvas, s, offsetY, secH, opts) {
+    let PW = canvas.width;
+    let ctx = canvas.getContext('2d');
+    let p = s.params;
+    let fbV   = opts.fbV  !== undefined ? opts.fbV  : 1.50;
+    let secT  = opts.secT || 'Earthen Section';
+    let bM    = opts.bM   || '1.5-D';
+    let bwL   = opts.bwL  || '12';
+    let bwR   = opts.bwR  || '17';
+
+    // ── Layout constants ──
+    let M=8, titleH=22, paramsH=26, gapP=3;
+    let rowH=60, numRows=4, legH=17;
+    let xLeft=10, rMarg=10;
+    let totW = PW - xLeft - rMarg;
+    let lblW=102, subLW=26, hdrW=lblW-subLW;
+    let gL = xLeft + lblW;
+    let graphW = totW - lblW;
+    let topM = M + titleH + paramsH + gapP;
+    let botR = numRows*rowH + legH + M;
+    let graphH = 250;
+    let gT = offsetY + topM;
+
+    // ── Data range ──
+    let allY = s.existing.concat(s.design).map(pt => pt.y);
+    let rawMinY = Math.min(...allY), rawMaxY = Math.max(...allY);
+    let midY = (rawMinY + rawMaxY) / 2;
+    let minY = Math.floor((midY - 20) / 10) * 10;
+    let maxY = minY + 40;
+    while (rawMaxY > maxY) { maxY += 10; }
+    while (rawMinY < minY) { minY -= 10; }
+    let rangeY = maxY - minY;
+
+    // X-axis: 20ft margin beyond design edge only
+    let desPtsX = s.design.length > 0 ? s.design.map(pt => pt.x) : [0];
+    let leftEdge = Math.min(...desPtsX);
+    let rightEdge = Math.max(...desPtsX);
+    let maxDesignX = Math.max(Math.abs(leftEdge), Math.abs(rightEdge));
+    let halfX = Math.max(80, Math.ceil((maxDesignX + 20) / 10) * 10);
+    let minX = -halfX;
+    let maxX =  halfX;
+    let rangeX = 2 * halfX;
+
+    // SQUARE GRID: ensure scX == scY
+    let sqRangeY = rangeX * graphH / graphW;
+    if (sqRangeY > rangeY) {
+      let extraY = (sqRangeY - rangeY) / 2;
+      minY = Math.floor((minY - extraY) / 5) * 5;
+      maxY = Math.ceil((maxY + extraY) / 5) * 5;
+      rangeY = maxY - minY;
+      rangeX = rangeY * graphW / graphH;
+      halfX = rangeX / 2;
+      minX = -halfX; maxX = halfX;
+    }
+
+    let scX = graphW / rangeX;
+    let scY = graphH / rangeY;
+
+    function tx(x) { return gL + (x - minX)*scX; }
+    function ty(y) { return gT + (maxY - y)*scY; }
+
+    // ── White background for this section ──
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, offsetY, PW, secH);
+
+    // ── TITLE ──
+    ctx.fillStyle = '#000';
+    ctx.font = 'bold 18px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText((p.canalName||'CANAL NAME').toUpperCase()+' X-SECTION AT RD: '+s.rd, PW/2, offsetY+M+14);
+
+    // ── PARAMS ROW ──
+    let items = ['B.W = '+p.bedWidth,'FSD = '+p.fsd,'FSL = '+p.fsl.toFixed(2),'B.L = '+p.bedLevel.toFixed(2),'F.B = '+parseFloat(fbV).toFixed(2)];
+    items.push('Bank/L = '+bwL,'Bank/R = '+bwR);
+    let pyTop = offsetY+M+titleH;
+    let cw = totW / items.length;
+    for(let i=0;i<items.length;i++){
+        let cx = xLeft + i*cw;
+        ctx.fillStyle='#f5f5f5'; ctx.fillRect(cx+0.5,pyTop+0.5,cw-1,paramsH-1);
+        ctx.strokeStyle='#000'; ctx.lineWidth=0.7; ctx.strokeRect(cx,pyTop,cw,paramsH);
+        ctx.fillStyle='#000'; ctx.font='bold 11px Arial'; ctx.textAlign='center';
+        ctx.fillText(items[i],cx+cw/2,pyTop+17);
+    }
+
+    // ── MINOR GRID 1ft ──
+    ctx.save();
+    ctx.strokeStyle='#cccccc'; ctx.lineWidth=0.5;
+    for(let gx=minX;gx<=maxX;gx+=1){let gpx=tx(gx);if(gpx<gL-0.5||gpx>gL+graphW+0.5)continue;ctx.beginPath();ctx.moveTo(gpx,gT);ctx.lineTo(gpx,gT+graphH);ctx.stroke();}
+    for(let gy=minY;gy<=maxY;gy+=1){let gpy=ty(gy);if(gpy<gT-0.5||gpy>gT+graphH+0.5)continue;ctx.beginPath();ctx.moveTo(gL,gpy);ctx.lineTo(gL+graphW,gpy);ctx.stroke();}
+    // ── MAJOR GRID 10ft ──
+    ctx.strokeStyle='#888888'; ctx.lineWidth=1.0;
+    for(let gx=minX;gx<=maxX;gx+=10){let gpx=tx(gx);if(gpx<gL-0.5||gpx>gL+graphW+0.5)continue;ctx.beginPath();ctx.moveTo(gpx,gT);ctx.lineTo(gpx,gT+graphH);ctx.stroke();}
+    for(let gy=minY;gy<=maxY;gy+=10){let gpy=ty(gy);if(gpy<gT-0.5||gpy>gT+graphH+0.5)continue;ctx.beginPath();ctx.moveTo(gL,gpy);ctx.lineTo(gL+graphW,gpy);ctx.stroke();}
+    ctx.restore();
+
+    // ── GRAPH BORDER ──
+    ctx.strokeStyle='#000'; ctx.lineWidth=1.5;
+    ctx.strokeRect(gL,gT,graphW,graphH);
+
+    // ── Y-AXIS LABELS ──
+    ctx.save();
+    ctx.font='8.5px Arial'; ctx.textAlign='right'; ctx.fillStyle='#000';
+    for(let yl=minY;yl<=maxY;yl+=10){
+        let ylpy=ty(yl);
+        if(ylpy<gT-1||ylpy>gT+graphH+1)continue;
+        ctx.beginPath();ctx.moveTo(gL-2,ylpy);ctx.lineTo(gL,ylpy);
+        ctx.strokeStyle='#000';ctx.lineWidth=0.8;ctx.stroke();
+        let yOff = 3;
+        if(yl === maxY) yOff = 8;
+        if(yl === minY) yOff = -2;
+        ctx.fillText(''+yl,gL-4,ylpy+yOff);
+    }
+    ctx.restore();
+
+    // ── H.I. / V.I. Scale ──
+    /*
+    ctx.save();
+    ctx.font='7px Arial'; ctx.fillStyle='#555'; ctx.textAlign='right';
+    ctx.fillText('H.I. 1:'+rangeX.toFixed(0)+'  V.I. 1:'+rangeY.toFixed(0),gL+graphW-4,gT+10);
+    ctx.restore();
+    */
+
+    // ── CENTER LINE ──
+    ctx.save();
+    ctx.setLineDash([8,4]); ctx.strokeStyle='#555'; ctx.lineWidth=0.9;
+    let x0=tx(0);
+    ctx.beginPath();ctx.moveTo(x0,gT);ctx.lineTo(x0,gT+graphH);ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font='bold 15px Arial'; ctx.textAlign='center'; ctx.fillStyle='#000';
+    ctx.fillText('\u2104',x0,gT+16);
+    ctx.restore();
+
+    // ── EXISTING LINE (solid teal) ──
+    if(s.existing&&s.existing.length>1){
+        ctx.save();
+        ctx.strokeStyle='#006064'; ctx.lineWidth=2; ctx.setLineDash([]);
+        ctx.beginPath();
+        [...s.existing].sort((a,b)=>a.x-b.x).forEach((pt,i)=>{
+            if(i===0)ctx.moveTo(tx(pt.x),ty(pt.y));else ctx.lineTo(tx(pt.x),ty(pt.y));
+        });
+        ctx.stroke();ctx.restore();
+    }
+
+    // ── DESIGN LINE (solid red) ──
+    if(s.design&&s.design.length>1){
+        ctx.save();
+        ctx.strokeStyle='#c62828'; ctx.lineWidth=2;
+        ctx.beginPath();
+        [...s.design].sort((a,b)=>a.x-b.x).forEach((pt,i)=>{
+            if(i===0)ctx.moveTo(tx(pt.x),ty(pt.y));else ctx.lineTo(tx(pt.x),ty(pt.y));
+        });
+        ctx.stroke();ctx.restore();
+    }
+
+    // ── CUT/FILL BOXES ──
+    let cutLS=(s.areas.bed.cut/2+s.areas.lb.cut+(s.areas.ld?s.areas.ld.cut:0)).toFixed(2);
+    let fillLS=(s.areas.bed.fill/2+s.areas.lb.fill+(s.areas.ld?s.areas.ld.fill:0)).toFixed(2);
+    let cutRS=(s.areas.bed.cut/2+s.areas.rb.cut+(s.areas.rd?s.areas.rd.cut:0)).toFixed(2);
+    let fillRS=(s.areas.bed.fill/2+s.areas.rb.fill+(s.areas.rd?s.areas.rd.fill:0)).toFixed(2);
+
+
+    // ── DATA BAND ──
+    let dbTop = gT+graphH;
+    let xArr = [];
+    for(let xx=Math.ceil(minX/10)*10;xx<=maxX;xx+=10)xArr.push(xx);
+    if(!xArr.includes(0)){xArr.push(0);xArr.sort((a,b)=>a-b);}
+
+    // Label block background
+    ctx.fillStyle='#ffffff';
+    ctx.fillRect(gL-lblW,dbTop,lblW,rowH*numRows);
+    ctx.strokeStyle='#000';ctx.lineWidth=0.8;
+    ctx.strokeRect(gL-lblW,dbTop,lblW,rowH*numRows);
+    // Row dividers in label block
+    [rowH,rowH*2,rowH*3].forEach(dy=>{
+        ctx.lineWidth=dy===rowH*2?1.5:0.6;
+        let startX = (dy===rowH*2) ? (gL-lblW) : (gL-subLW);
+        ctx.beginPath();ctx.moveTo(startX,dbTop+dy);ctx.lineTo(gL,dbTop+dy);ctx.stroke();
+    });
+    ctx.lineWidth=0.8;
+    // Sub-label column divider
+    ctx.beginPath();ctx.moveTo(gL-subLW,dbTop);ctx.lineTo(gL-subLW,dbTop+rowH*numRows);ctx.stroke();
+
+    // "Design Data" rotated vertical
+    ctx.save();
+    ctx.translate(gL-lblW+hdrW/2,dbTop+rowH);
+    ctx.rotate(-Math.PI/2);
+    ctx.font='bold 14px Arial';ctx.fillStyle='#000';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('Design Data',0,0);
+    ctx.restore();
+    // "Existing Data" rotated vertical
+    ctx.save();
+    ctx.translate(gL-lblW+hdrW/2,dbTop+rowH*3);
+    ctx.rotate(-Math.PI/2);
+    ctx.font='bold 14px Arial';ctx.fillStyle='#000';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('Existing Data',0,0);
+    ctx.restore();
+
+    // Elev / Dist sub-labels (centered vertically in each 60px row)
+    let slX=gL-subLW+subLW/2;
+    ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#000';
+    ctx.fillText('Elev',slX,dbTop+rowH*0.5);
+    ctx.fillText('Dist',slX,dbTop+rowH*1.5);
+    ctx.fillText('Elev',slX,dbTop+rowH*2.5);
+    ctx.fillText('Dist',slX,dbTop+rowH*3.5);
+
+    // ── Design Data Row Points (Row 0: Elev, Row 1: Dist) ──
+    let desPts = [];
+    if (s.design && s.design.length > 0) {
+        let sortedD = [...s.design].sort((a, b) => a.x - b.x);
+        sortedD.forEach(pt => {
+            let isBedCenter = (Math.abs(pt.x) < 0.01);
+            if (isBedCenter || desPts.length === 0 || Math.abs(pt.x - desPts[desPts.length - 1].x) > 0.05 || Math.abs(pt.y - desPts[desPts.length - 1].y) > 0.05) {
+                desPts.push(pt);
+            }
+        });
+    }
+
+    let lastDesCx = -9999;
+    desPts.forEach(pt => {
+        let cx = tx(pt.x);
+        if (cx < gL - 0.5 || cx > gL + graphW + 0.5) return;
+        let isC = (Math.abs(pt.x) < 0.01);
+        if (isC) {
+            ctx.fillStyle = '#fffde7';
+            ctx.fillRect(cx - 6, dbTop, 12, rowH * 2);
+        }
+        ctx.strokeStyle = '#ddd';
+        ctx.lineWidth = 0.4;
+        ctx.beginPath(); ctx.moveTo(cx, dbTop); ctx.lineTo(cx, dbTop + rowH * 2); ctx.stroke();
+
+        let textCx = cx;
+        if (textCx - lastDesCx < 14) {
+            textCx = lastDesCx + 14;
+        }
+        lastDesCx = textCx;
+
+        let dsStr = Number(Math.abs(pt.x).toFixed(2)).toString();
+        let elStr = pt.y.toFixed(2);
+
+        // Elev (Row 0)
+        ctx.save();
+        ctx.translate(textCx, dbTop + rowH * 0.5);
+        ctx.rotate(-Math.PI / 2);
+        ctx.font = 'bold 11.5px Consolas, monospace'; ctx.fillStyle = '#c62828'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(elStr, 0, 0);
+        ctx.restore();
+
+        // Dist (Row 1)
+        ctx.save();
+        ctx.translate(textCx, dbTop + rowH * 1.5);
+        ctx.rotate(-Math.PI / 2);
+        ctx.font = 'bold 11.5px Consolas, monospace'; ctx.fillStyle = '#b71c1c'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(dsStr, 0, 0);
+        ctx.restore();
+    });
+
+    // ── Existing Data Row Points (Row 2: Elev, Row 3: Dist) ──
+    let exPts = [];
+    if (s.existing && s.existing.length > 0) {
+        let sortedE = [...s.existing].sort((a, b) => a.x - b.x);
+        sortedE.forEach(pt => {
+            if (exPts.length === 0 || Math.abs(pt.x - exPts[exPts.length - 1].x) > 0.05 || Math.abs(pt.y - exPts[exPts.length - 1].y) > 0.05) {
+                exPts.push(pt);
+            }
+        });
+    }
+
+    let lastExCx = -9999;
+    exPts.forEach(pt => {
+        let cx = tx(pt.x);
+        if (cx < gL - 0.5 || cx > gL + graphW + 0.5) return;
+        let isC = (Math.abs(pt.x) < 0.01);
+        if (isC) {
+            ctx.fillStyle = '#fffde7';
+            ctx.fillRect(cx - 6, dbTop + rowH * 2, 12, rowH * 2);
+        }
+        ctx.strokeStyle = '#ddd';
+        ctx.lineWidth = 0.4;
+        ctx.beginPath(); ctx.moveTo(cx, dbTop + rowH * 2); ctx.lineTo(cx, dbTop + rowH * 4); ctx.stroke();
+
+        let textCx = cx;
+        if (textCx - lastExCx < 14) {
+            textCx = lastExCx + 14;
+        }
+        lastExCx = textCx;
+
+        let dsStr = Number(Math.abs(pt.x).toFixed(2)).toString();
+        let elStr = pt.y.toFixed(2);
+
+        // Elev (Row 2)
+        ctx.save();
+        ctx.translate(textCx, dbTop + rowH * 2.5);
+        ctx.rotate(-Math.PI / 2);
+        ctx.font = 'bold 11.5px Consolas, monospace'; ctx.fillStyle = '#006064'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(elStr, 0, 0);
+        ctx.restore();
+
+        // Dist (Row 3)
+        ctx.save();
+        ctx.translate(textCx, dbTop + rowH * 3.5);
+        ctx.rotate(-Math.PI / 2);
+        ctx.font = 'bold 11.5px Consolas, monospace'; ctx.fillStyle = '#004d40'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(dsStr, 0, 0);
+        ctx.restore();
+    });
+
+    // Data band outer border + row lines
+    ctx.strokeStyle='#000';ctx.lineWidth=0.8;
+    ctx.strokeRect(gL,dbTop,graphW,rowH*numRows);
+    [rowH,rowH*2,rowH*3].forEach(dy=>{
+        ctx.lineWidth=dy===rowH*2?1.5:0.6;
+        ctx.beginPath();ctx.moveTo(gL,dbTop+dy);ctx.lineTo(gL+graphW,dbTop+dy);ctx.stroke();
+    });
+    ctx.lineWidth=0.8;
+
+    // ── LEGEND ──
+    let legY=dbTop+rowH*numRows+4;
+    /* 
+    ctx.font='bold 9px Arial';ctx.fillStyle='#000';ctx.textAlign='left';
+    ctx.fillText('Legend:',gL,legY+11);
+    ctx.save();ctx.strokeStyle='#c62828';ctx.lineWidth=2;;
+    ctx.beginPath();ctx.moveTo(gL+56,legY+7);ctx.lineTo(gL+86,legY+7);ctx.stroke();
+    ctx.setLineDash([]);ctx.restore();
+    ctx.font='8px Arial';ctx.fillStyle='#c62828';ctx.fillText('Design',gL+89,legY+11);
+    ctx.save();ctx.strokeStyle='#006064';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(gL+130,legY+7);ctx.lineTo(gL+160,legY+7);ctx.stroke();ctx.restore();
+    ctx.fillStyle='#006064';ctx.fillText('Existing',gL+163,legY+11);
+    */
+    ctx.fillStyle='#666';ctx.font='7px Arial';ctx.textAlign='right';
+    ctx.fillText('1 ft Minor | 10 ft Major Grid',gL+graphW,legY+11);
+}
+
+// ─── Live Preview ───
+function renderSingleChart(index) {
+    if(processedSections.length===0)return;
+    if(index<0)index=0;
+    if(index>=processedSections.length)index=processedSections.length-1;
+    currentPreviewIndex=index;
+
+    let sel=document.getElementById('previewRdSelector');
+    if(sel)sel.value=currentPreviewIndex;
+    let info=document.getElementById('previewCounterInfo');
+    if(info)info.innerText=`(${currentPreviewIndex+1} of ${processedSections.length} X-Sections)`;
+
+    let c=document.getElementById('previewContainer');
+    c.innerHTML='';
+
+    let s=processedSections[currentPreviewIndex];
+    if(!s) return;
+
+    let h = getPDFHTML([s], false);
+    let iframe = document.createElement('iframe');
+    iframe.style.width = '100%';
+    iframe.style.aspectRatio = '1122 / 794';
+    iframe.style.border = '1px solid #ccc';
+    iframe.style.boxShadow = '0 4px 15px rgba(0,0,0,0.15)';
+    iframe.style.borderRadius = '3px';
+    
+    let scaledHTML = h.replace('</head>', `
+        <style>
+            body, html { width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden; background: #f4f5f7; display: flex; align-items: center; justify-content: center; }
+            .page { 
+                transform: scale(calc(100vw / 1125)); 
+                transform-origin: center; 
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
+            }
+        </style>
+        </head>
+    `);
+    
+    iframe.srcdoc = scaledHTML;
+    c.appendChild(iframe);
+}
+
+function nextPreviewRD() {
+    if (processedSections.length === 0) return;
+    if (currentPreviewIndex < processedSections.length - 1) {
+        currentPreviewIndex++;
+        renderSingleChart(currentPreviewIndex);
+    }
+}
+
+function prevPreviewRD() {
+    if (processedSections.length === 0) return;
+    if (currentPreviewIndex > 0) {
+        currentPreviewIndex--;
+        renderSingleChart(currentPreviewIndex);
+    }
+}
+
+function jumpToPreviewRD(idx) {
+    currentPreviewIndex = parseInt(idx) || 0;
+    renderSingleChart(currentPreviewIndex);
+}
+
+function downloadExcel() {
+    if(processedSections.length===0){alert("Generate karein!");return;}
+    let sec = document.getElementById('sectionType').value;
+    let dR = document.getElementById('div_req').value;
+    let isDiv = (sec !== "Earthen Section" && dR === "TRUE");
+
+    let chk = {
+        bc: (document.getElementById('chk_bed_cut') || {}).checked,
+        bf: (document.getElementById('chk_bed_fill') || {}).checked,
+        lbc: (document.getElementById('chk_lb_cut') || {}).checked,
+        lbf: (document.getElementById('chk_lb_fill') || {}).checked,
+        rbc: (document.getElementById('chk_rb_cut') || {}).checked,
+        rbf: (document.getElementById('chk_rb_fill') || {}).checked,
+        ldc: (document.getElementById('chk_ld_cut') || {}).checked,
+        ldf: (document.getElementById('chk_ld_fill') || {}).checked,
+        rdc: (document.getElementById('chk_rd_cut') || {}).checked,
+        rdf: (document.getElementById('chk_rd_fill') || {}).checked
+    };
+
+    let wb=XLSX.utils.book_new();
+    let header = ["RD"];
+    if(chk.bc) header.push("Bed Cut"); if(chk.bf) header.push("Bed Fill");
+    if(chk.lbc) header.push("L.Bank Cut"); if(chk.lbf) header.push("L.Bank Fill");
+    if(chk.rbc) header.push("R.Bank Cut"); if(chk.rbf) header.push("R.Bank Fill");
+    if(isDiv) {
+        if(chk.ldc) header.push("L.Div Cut"); if(chk.ldf) header.push("L.Div Fill");
+        if(chk.rdc) header.push("R.Div Cut"); if(chk.rdf) header.push("R.Div Fill");
+    }
+    
+    let d=[header];
+    processedSections.forEach(s => {
+        let row = [s.rd];
+        if(chk.bc) row.push(s.areas.bed.cut.toFixed(3));
+        if(chk.bf) row.push(s.areas.bed.fill.toFixed(3));
+        if(chk.lbc) row.push(s.areas.lb.cut.toFixed(3));
+        if(chk.lbf) row.push(s.areas.lb.fill.toFixed(3));
+        if(chk.rbc) row.push(s.areas.rb.cut.toFixed(3));
+        if(chk.rbf) row.push(s.areas.rb.fill.toFixed(3));
+        if(isDiv) {
+            if(chk.ldc) row.push(s.areas.ld.cut.toFixed(3));
+            if(chk.ldf) row.push(s.areas.ld.fill.toFixed(3));
+            if(chk.rdc) row.push(s.areas.rd.cut.toFixed(3));
+            if(chk.rdf) row.push(s.areas.rd.fill.toFixed(3));
+        }
+        d.push(row);
+    });
+    let ws=XLSX.utils.aoa_to_sheet(d);
+    XLSX.utils.book_append_sheet(wb,ws,"Report");
+    XLSX.writeFile(wb,"Canal_Report.xlsx");
+}
+
+function downloadPDF() {
+    if(processedSections.length === 0) { alert("Data generate karein pehle!"); return; }
+    let h = getPDFHTML(processedSections, true);
+    var pW = window.open('', '', 'width=1200,height=800');
+    pW.document.write(h);
+    pW.document.close();
+    pW.focus();
+}
+
+function getPDFHTML(sectionList, autoPrint) {
+    if(sectionList.length===0){return "";}
+
+    let bwL     = (document.getElementById('bw_left')         || {value:'12'}).value;
+    let bwR     = (document.getElementById('bw_right')        || {value:'17'}).value;
+    let fbV     = (document.getElementById('freeboard')       || {value:'1.50'}).value;
+    let secT    = (document.getElementById('sectionType')     || {value:'Earthen Section'}).value;
+    let bM      = (document.getElementById('bermMultiplier')  || {value:'1.5-D'}).value;
+    let projName= (document.getElementById('projName')        || {value:'CANAL IMPROVEMENT WORKS'}).value;
+    let projNo  = (document.getElementById('projNo')          || {value:''}).value;
+    let subEng  = (document.getElementById('subEngineer')     || {value:''}).value;
+    let sdoN    = (document.getElementById('sdoName')         || {value:''}).value;
+    let xenN    = (document.getElementById('xenName')         || {value:''}).value;
+    let deptN   = (document.getElementById('deptName')        || {value:'IRRIGATION DIVISION'}).value;
+
+    let chk = {
+        bc: (document.getElementById('chk_bed_cut') || {}).checked,
+        bf: (document.getElementById('chk_bed_fill') || {}).checked,
+        lbc: (document.getElementById('chk_lb_cut') || {}).checked,
+        lbf: (document.getElementById('chk_lb_fill') || {}).checked,
+        rbc: (document.getElementById('chk_rb_cut') || {}).checked,
+        rbf: (document.getElementById('chk_rb_fill') || {}).checked,
+        ldc: (document.getElementById('chk_ld_cut') || {}).checked,
+        ldf: (document.getElementById('chk_ld_fill') || {}).checked,
+        rdc: (document.getElementById('chk_rd_cut') || {}).checked,
+        rdf: (document.getElementById('chk_rd_fill') || {}).checked
+    };
+
+    let S = JSON.stringify(sectionList);
+    let pNm=projName.replace(/"/g,'&quot;'),pNo2=projNo.replace(/"/g,'&quot;');
+    let sEng=subEng.replace(/"/g,'&quot;'),sdoNe=sdoN.replace(/"/g,'&quot;');
+    let xenNe=xenN.replace(/"/g,'&quot;'),deptNe=deptN.replace(/"/g,'&quot;');
+    let bwLe=bwL,bwRe=bwR,fbVe=fbV,bMe=bM,secTe=secT;
+
+    let h = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Canal X-Sections</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+@media print { @page { size: A4 landscape; margin-top: 0.75in !important; margin-bottom: 0.75in !important; margin-left: 0.20in !important; margin-right: 0.20in !important; } }
+body{background:#fff;font-family:Arial,sans-serif;}
+.page{width:1122px;height:794px;page-break-after:always;overflow:hidden;display:block;}
+.page:last-child{page-break-after:avoid;}
+canvas{display:block;}
+</style>
+</head><body>
+<div id="root"></div>
+<script>
+var sections=${S};
+var chkOpts=${JSON.stringify(chk)};
+var bwL="${bwLe}",bwR="${bwRe}",fbV="${fbVe}",secT="${secTe}",bM="${bMe}";
+var projName="${pNm}",projNo="${pNo2}";
+var subEng="${sEng}",sdoN="${sdoNe}",xenN="${xenNe}",deptN="${deptNe}";
+var PW=1122,PH=794,SIG_H=82;
+
+function ipolY(pts,x){
+  if(!pts||!pts.length)return null;
+  var sr=[].concat(pts).sort(function(a,b){return a.x-b.x;});
+  if(x<sr[0].x-0.01||x>sr[sr.length-1].x+0.01)return null;
+  if(x<=sr[0].x)return sr[0].y;
+  if(x>=sr[sr.length-1].x)return sr[sr.length-1].y;
+  for(var j=0;j<sr.length-1;j++){
+    if(x>=sr[j].x&&x<=sr[j+1].x)
+      return sr[j].y+(sr[j+1].y-sr[j].y)*((x-sr[j].x)/(sr[j+1].x-sr[j].x));
+  }
+  return null;
+}
+
+function drawOneSec(ctx,s,oy,sh){
+  var p=s.params;
+  var M=6,titleH=24,paramsH=28,gapP=3;
+  var rowH=48,numRows=4,legH=14;
+  var xLeft=10, rMarg=10;
+  var totW=PW-xLeft-rMarg;
+  var lblW=102,subLW=26,hdrW=lblW-subLW;
+  var topM=M+titleH+paramsH+gapP;
+  var gL=xLeft+lblW,gT=oy+topM;
+
+  var allY=s.existing.concat(s.design).map(function(pt){return pt.y;});
+  var rawMinY=Math.min.apply(null,allY),rawMaxY=Math.max.apply(null,allY);
+
+  // Y-axis: 40ft window centered on data
+  var midY = (rawMinY + rawMaxY) / 2;
+  var minY = Math.floor((midY - 20) / 10) * 10;
+  var maxY = minY + 40;
+  while (rawMaxY > maxY) { maxY += 10; }
+  while (rawMinY < minY) { minY -= 10; }
+  var rangeY = maxY - minY;
+
+  var graphW = totW - lblW; // fixed px width
+  var graphH = 250;         // fixed px height
+
+  // X-axis: 20ft margin beyond design edge only
+  var desPtsX = s.design.length > 0 ? s.design.map(function(pt){return pt.x;}) : [0];
+  var leftEdge = Math.min.apply(null, desPtsX);
+  var rightEdge = Math.max.apply(null, desPtsX);
+  var maxDesignX = Math.max(Math.abs(leftEdge), Math.abs(rightEdge));
+  var halfX = Math.max(80, Math.ceil((maxDesignX + 20) / 10) * 10);
+  var minX = -halfX;
+  var maxX =  halfX;
+  var rangeX = 2 * halfX;
+
+  // SQUARE GRID: ensure scX == scY
+  // Required rangeY for square grid = rangeX * graphH / graphW
+  var sqRangeY = rangeX * graphH / graphW;
+  if (sqRangeY > rangeY) {
+    var extraY = (sqRangeY - rangeY) / 2;
+    minY = Math.floor((minY - extraY) / 5) * 5;
+    maxY = Math.ceil((maxY + extraY) / 5) * 5;
+    rangeY = maxY - minY;
+    // Re-sync rangeX for exact square ratio
+    rangeX = rangeY * graphW / graphH;
+    halfX = rangeX / 2;
+    minX = -halfX; maxX = halfX;
+  }
+
+  var scX = graphW / rangeX;
+  var scY = graphH / rangeY;
+
+  function tx(x){return gL+(x-minX)*scX;}
+  function ty(y){return gT+(maxY-y)*scY;}
+
+  ctx.fillStyle='#fff';ctx.fillRect(xLeft,oy,totW,sh);
+
+  var topBoxX = xLeft;
+  var topBoxW = totW;
+  var topBoxY = oy + 4;
+  var titleH2 = 28;
+
+  ctx.fillStyle = '#004d40';
+  ctx.fillRect(topBoxX, topBoxY, topBoxW, titleH2);
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 1.0;
+  ctx.strokeRect(topBoxX, topBoxY, topBoxW, titleH2);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.font = 'bold 15px Arial';
+  ctx.textAlign = 'center';
+  var titleText = ((p.canalName||'CANAL NAME') + ' X-SECTION AT RD: ' + s.rd).toUpperCase();
+  ctx.fillText(titleText, topBoxX + topBoxW / 2, topBoxY + 19);
+
+  var items=['B.W = '+p.bedWidth,'F.S.D = '+p.fsd,'F.S.L = '+p.fsl.toFixed(2),'B.L = '+p.bedLevel.toFixed(2),'F.B = '+parseFloat(fbV).toFixed(2)];
+  items.push('Left Bank = '+bwL,'Right Bank = '+bwR);
+
+  var paramY = topBoxY + titleH2;
+  var paramH = 26;
+  var cw2 = topBoxW / items.length;
+
+  ctx.fillStyle = '#eaeff2';
+  ctx.fillRect(topBoxX, paramY, topBoxW, paramH);
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 1.0;
+  ctx.strokeRect(topBoxX, paramY, topBoxW, paramH);
+
+  for (var i = 0; i < items.length; i++) {
+    var cx = topBoxX + i * cw2;
+    if (i > 0) {
+      ctx.beginPath(); ctx.moveTo(cx, paramY); ctx.lineTo(cx, paramY + paramH);
+      ctx.strokeStyle = '#000'; ctx.lineWidth = 0.8; ctx.stroke();
+    }
+    ctx.fillStyle = '#000'; ctx.font = 'bold 11.5px Arial'; ctx.textAlign = 'center';
+    ctx.fillText(items[i], cx + cw2 / 2, paramY + 17);
+  }
+
+  ctx.save();
+  ctx.strokeStyle='#cccccc';ctx.lineWidth=0.5;
+  for(var gx=minX;gx<=maxX;gx+=1){var gpx=tx(gx);if(gpx<gL-0.5||gpx>gL+graphW+0.5)continue;ctx.beginPath();ctx.moveTo(gpx,gT);ctx.lineTo(gpx,gT+graphH);ctx.stroke();}
+  for(var gy=minY;gy<=maxY;gy+=1){var gpy=ty(gy);if(gpy<gT-0.5||gpy>gT+graphH+0.5)continue;ctx.beginPath();ctx.moveTo(gL,gpy);ctx.lineTo(gL+graphW,gpy);ctx.stroke();}
+  ctx.strokeStyle='#888888';ctx.lineWidth=1.0;
+  for(var gx=minX;gx<=maxX;gx+=10){var gpx=tx(gx);if(gpx<gL-0.5||gpx>gL+graphW+0.5)continue;ctx.beginPath();ctx.moveTo(gpx,gT);ctx.lineTo(gpx,gT+graphH);ctx.stroke();}
+  for(var gy=minY;gy<=maxY;gy+=10){var gpy=ty(gy);if(gpy<gT-0.5||gpy>gT+graphH+0.5)continue;ctx.beginPath();ctx.moveTo(gL,gpy);ctx.lineTo(gL+graphW,gpy);ctx.stroke();}
+  ctx.restore();
+
+  ctx.strokeStyle='#000';ctx.lineWidth=1.2;
+  ctx.strokeRect(gL,gT,graphW,graphH);
+
+  ctx.save();
+  ctx.font='7.5px Arial';ctx.textAlign='right';ctx.fillStyle='#000';
+  for(var yl=minY;yl<=maxY;yl+=10){
+    var ylpy=ty(yl);
+    if(ylpy<gT-1||ylpy>gT+graphH+1)continue;
+    ctx.beginPath();ctx.moveTo(gL-2,ylpy);ctx.lineTo(gL,ylpy);
+    ctx.strokeStyle='#000';ctx.lineWidth=0.7;ctx.stroke();
+    var yOff = 3;
+    if(yl === maxY) yOff = 8;
+    if(yl === minY) yOff = -2;
+    ctx.fillText(''+yl,gL-4,ylpy+yOff);
+  }
+  ctx.restore();
+
+  ctx.save();
+  ctx.setLineDash([7,4]);ctx.strokeStyle='#555';ctx.lineWidth=0.8;
+  var x0=tx(0);
+  ctx.beginPath();ctx.moveTo(x0,gT);ctx.lineTo(x0,gT+graphH);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.font='bold 13px Arial';ctx.textAlign='center';ctx.fillStyle='#000';
+  ctx.fillText('\u2104',x0,gT+13);
+  ctx.restore();
+
+  if(s.existing&&s.existing.length>1){
+    ctx.save();
+    ctx.strokeStyle='#004d40';ctx.lineWidth=1.8;
+    ctx.beginPath();
+    [].concat(s.existing).sort(function(a,b){return a.x-b.x;}).forEach(function(pt,i){
+      if(i===0)ctx.moveTo(tx(pt.x),ty(pt.y));else ctx.lineTo(tx(pt.x),ty(pt.y));
+    });
+    ctx.stroke();ctx.restore();
+  }
+
+  if(s.design&&s.design.length>1){
+    ctx.save();
+    ctx.setLineDash([]);
+    ctx.strokeStyle='#b71c1c';ctx.lineWidth=1.8;
+    ctx.beginPath();
+    [].concat(s.design).sort(function(a,b){return a.x-b.x;}).forEach(function(pt,i){
+      if(i===0)ctx.moveTo(tx(pt.x),ty(pt.y));else ctx.lineTo(tx(pt.x),ty(pt.y));
+    });
+    ctx.stroke();ctx.setLineDash([]);ctx.restore();
+  }
+
+  var dbTop=gT+graphH;
+  ctx.fillStyle='#ffffff';
+  ctx.fillRect(xLeft,dbTop,lblW,rowH*numRows);
+  ctx.strokeStyle='#000';ctx.lineWidth=0.8;
+  ctx.strokeRect(xLeft,dbTop,lblW,rowH*numRows);
+  [rowH,rowH*2,rowH*3].forEach(function(dy){
+    ctx.lineWidth=dy===rowH*2?1.4:0.6;
+    var startX=(dy===rowH*2)?xLeft:(gL-subLW);
+    ctx.beginPath();ctx.moveTo(startX,dbTop+dy);ctx.lineTo(gL,dbTop+dy);ctx.stroke();
+  });
+  ctx.lineWidth=0.8;
+  ctx.beginPath();ctx.moveTo(gL-subLW,dbTop);ctx.lineTo(gL-subLW,dbTop+rowH*numRows);ctx.stroke();
+
+  ctx.save();
+  ctx.translate(xLeft+hdrW/2,dbTop+rowH);
+  ctx.rotate(-Math.PI/2);
+  ctx.font='bold 13.5px Arial';ctx.fillStyle='#000';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('Design Data',0,0);
+  ctx.restore();
+  ctx.save();
+  ctx.translate(xLeft+hdrW/2,dbTop+rowH*3);
+  ctx.rotate(-Math.PI/2);
+  ctx.font='bold 13.5px Arial';ctx.fillStyle='#000';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('Existing Data',0,0);
+  ctx.restore();
+
+  var slX=gL-subLW+subLW/2;
+  ctx.font='bold 11px Arial';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#000';
+  ctx.fillText('Elev',slX,dbTop+rowH*0.5);
+  ctx.fillText('Dist',slX,dbTop+rowH*1.5);
+  ctx.fillText('Elev',slX,dbTop+rowH*2.5);
+  ctx.fillText('Dist',slX,dbTop+rowH*3.5);
+
+  var desPts = [];
+  if (s.design && s.design.length > 0) {
+    var sortedD = [].concat(s.design).sort(function(a, b){ return a.x - b.x; });
+    sortedD.forEach(function(pt){
+      var isBedCenter = (Math.abs(pt.x) < 0.01);
+      if (isBedCenter || desPts.length === 0 || Math.abs(pt.x - desPts[desPts.length - 1].x) > 0.05 || Math.abs(pt.y - desPts[desPts.length - 1].y) > 0.05) {
+        desPts.push(pt);
+      }
+    });
+  }
+
+  var lastDesCx = -9999;
+  desPts.forEach(function(pt){
+    var cx = tx(pt.x);
+    if (cx < gL - 0.5 || cx > gL + graphW + 0.5) return;
+    var isC = (Math.abs(pt.x) < 0.01);
+    if (isC) {
+      ctx.fillStyle = '#fffde7';
+      ctx.fillRect(cx - 5, dbTop, 10, rowH * 2);
+    }
+    ctx.strokeStyle = '#ddd';
+    ctx.lineWidth = 0.4;
+    ctx.beginPath(); ctx.moveTo(cx, dbTop); ctx.lineTo(cx, dbTop + rowH * 2); ctx.stroke();
+    var textCx = cx;
+    if (textCx - lastDesCx < 12) { textCx = lastDesCx + 12; }
+    lastDesCx = textCx;
+    var dsStr = Number(Math.abs(pt.x).toFixed(2)).toString();
+    var elStr = pt.y.toFixed(2);
+    ctx.save();
+    ctx.translate(textCx, dbTop + rowH * 0.5);
+    ctx.rotate(-Math.PI / 2);
+    ctx.font = 'bold 11.5px Consolas, monospace'; ctx.fillStyle = '#b71c1c'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(elStr, 0, 0);
+    ctx.restore();
+    ctx.save();
+    ctx.translate(textCx, dbTop + rowH * 1.5);
+    ctx.rotate(-Math.PI / 2);
+    ctx.font = 'bold 11.5px Consolas, monospace'; ctx.fillStyle = '#c62828'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(dsStr, 0, 0);
+    ctx.restore();
+  });
+
+  var exPts = [];
+  if (s.existing && s.existing.length > 0) {
+    var sortedE = [].concat(s.existing).sort(function(a, b){ return a.x - b.x; });
+    sortedE.forEach(function(pt){
+      if (exPts.length === 0 || Math.abs(pt.x - exPts[exPts.length - 1].x) > 0.05 || Math.abs(pt.y - exPts[exPts.length - 1].y) > 0.05) {
+        exPts.push(pt);
+      }
+    });
+  }
+
+  var lastExCx = -9999;
+  exPts.forEach(function(pt){
+    var cx = tx(pt.x);
+    if (cx < gL - 0.5 || cx > gL + graphW + 0.5) return;
+    var isC = (Math.abs(pt.x) < 0.01);
+    if (isC) {
+      ctx.fillStyle = '#fffde7';
+      ctx.fillRect(cx - 5, dbTop + rowH * 2, 10, rowH * 2);
+    }
+    ctx.strokeStyle = '#ddd';
+    ctx.lineWidth = 0.4;
+    ctx.beginPath(); ctx.moveTo(cx, dbTop + rowH * 2); ctx.lineTo(cx, dbTop + rowH * 4); ctx.stroke();
+    var textCx = cx;
+    if (textCx - lastExCx < 12) { textCx = lastExCx + 12; }
+    lastExCx = textCx;
+    var dsStr = Number(Math.abs(pt.x).toFixed(2)).toString();
+    var elStr = pt.y.toFixed(2);
+    ctx.save();
+    ctx.translate(textCx, dbTop + rowH * 2.5);
+    ctx.rotate(-Math.PI / 2);
+    ctx.font = 'bold 11.5px Consolas, monospace'; ctx.fillStyle = '#004d40'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(elStr, 0, 0);
+    ctx.restore();
+    ctx.save();
+    ctx.translate(textCx, dbTop + rowH * 3.5);
+    ctx.rotate(-Math.PI / 2);
+    ctx.font = 'bold 11.5px Consolas, monospace'; ctx.fillStyle = '#00695c'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(dsStr, 0, 0);
+    ctx.restore();
+  });
+
+  ctx.strokeStyle='#000';ctx.lineWidth=0.8;
+  ctx.strokeRect(gL,dbTop,graphW,rowH*numRows);
+  [rowH,rowH*2,rowH*3].forEach(function(dy){
+    ctx.lineWidth=dy===rowH*2?1.4:0.6;
+    ctx.beginPath();ctx.moveTo(gL,dbTop+dy);ctx.lineTo(gL+graphW,dbTop+dy);ctx.stroke();
+  });
+  ctx.lineWidth=0.8;
+
+  var chk = window.chkOpts || { bc:true, bf:true, lbc:true, lbf:true, rbc:true, rbf:true, ldc:true, ldf:true, rdc:true, rdf:true };
+  var activeGroups = [];
+  if (chk.lbc || chk.lbf) {
+    var lines = [];
+    if (chk.lbc) lines.push('Cut L/S = ' + s.areas.lb.cut.toFixed(2));
+    if (chk.lbf) lines.push('Fill L/S = ' + s.areas.lb.fill.toFixed(2));
+    activeGroups.push({ title: 'LEFT BANK', lines: lines });
+  }
+  if (chk.bc || chk.bf) {
+    var lines = [];
+    if (chk.bc) lines.push('Cut Bed = ' + s.areas.bed.cut.toFixed(2));
+    if (chk.bf) lines.push('Fill Bed = ' + s.areas.bed.fill.toFixed(2));
+    activeGroups.push({ title: 'BED CUTTING', lines: lines });
+  }
+  if (chk.rbc || chk.rbf) {
+    var lines = [];
+    if (chk.rbc) lines.push('Cut R/S = ' + s.areas.rb.cut.toFixed(2));
+    if (chk.rbf) lines.push('Fill R/S = ' + s.areas.rb.fill.toFixed(2));
+    activeGroups.push({ title: 'RIGHT BANK', lines: lines });
+  }
+  if (s.areas.ld && (chk.ldc || chk.ldf)) {
+    var lines = [];
+    if (chk.ldc) lines.push('Cut Div L = ' + s.areas.ld.cut.toFixed(2));
+    if (chk.ldf) lines.push('Fill Div L = ' + s.areas.ld.fill.toFixed(2));
+    activeGroups.push({ title: 'LEFT DIVERSION', lines: lines });
+  }
+  if (s.areas.rd && (chk.rdc || chk.rdf)) {
+    var lines = [];
+    if (chk.rdc) lines.push('Cut Div R = ' + s.areas.rd.cut.toFixed(2));
+    if (chk.rdf) lines.push('Fill Div R = ' + s.areas.rd.fill.toFixed(2));
+    activeGroups.push({ title: 'RIGHT DIVERSION', lines: lines });
+  }
+
+  var boxX = xLeft;
+  var boxW = totW;
+  var boxY = dbTop + rowH * numRows + 10;
+  var boxH = 158;
+
+  ctx.fillStyle='#777';ctx.font='6.5px Arial';ctx.textAlign='right';
+  ctx.fillText('1ft Minor | 10ft Major Grid', gL + graphW, boxY - 3);
+
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 1.0;
+  ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+  var hdrH = 26;
+  ctx.fillStyle = '#004d40';
+  ctx.fillRect(boxX, boxY, boxW, hdrH);
+  ctx.font = 'bold 12px Arial'; ctx.fillStyle = '#fff'; ctx.textAlign = 'center';
+  ctx.fillText('EARTHWORK QUANTITIES & AREA SUMMARY (Sq.Ft)', boxX + boxW / 2, boxY + 17);
+
+  var totCut = 0;
+  var totFill = 0;
+  activeGroups.forEach(function(grp) {
+    grp.lines.forEach(function(l) {
+      if (l.indexOf('Cut') !== -1) {
+        var val = parseFloat(l.split('=')[1]);
+        if (!isNaN(val)) totCut += val;
+      }
+      if (l.indexOf('Fill') !== -1) {
+        var val = parseFloat(l.split('=')[1]);
+        if (!isNaN(val)) totFill += val;
+      }
+    });
+  });
+
+  var colHeaderY = boxY + hdrH;
+  var colHeaderH = 25;
+  var subRowY = colHeaderY + colHeaderH;
+  var subRowH = 72;
+  var footerY = subRowY + subRowH;
+  var footerH = boxH - (hdrH + colHeaderH + subRowH);
+
+  if (activeGroups.length > 0) {
+    var numCols = activeGroups.length;
+    var colW = boxW / numCols;
+
+    ctx.fillStyle = '#eaeff2';
+    ctx.fillRect(boxX, colHeaderY, boxW, colHeaderH);
+    ctx.beginPath(); ctx.moveTo(boxX, colHeaderY + colHeaderH); ctx.lineTo(boxX + boxW, colHeaderY + colHeaderH);
+    ctx.strokeStyle = '#000'; ctx.lineWidth = 0.8; ctx.stroke();
+
+    for (var gi = 0; gi < numCols; gi++) {
+      var grp = activeGroups[gi];
+      var cx = boxX + gi * colW;
+      var cCenterX = cx + colW / 2;
+
+      if (gi > 0) {
+        ctx.beginPath(); ctx.moveTo(cx, colHeaderY); ctx.lineTo(cx, footerY);
+        ctx.strokeStyle = '#000'; ctx.lineWidth = 0.8; ctx.stroke();
+      }
+
+      ctx.font = 'bold 11.5px Arial'; ctx.fillStyle = '#000'; ctx.textAlign = 'center';
+      ctx.fillText(grp.title, cCenterX, colHeaderY + 17);
+
+      ctx.font = 'bold 11px Arial'; ctx.fillStyle = '#1a252c'; ctx.textAlign = 'center';
+      if (grp.lines.length === 1) {
+        ctx.fillText(grp.lines[0] + ' Sq.ft', cCenterX, subRowY + 39);
+      } else if (grp.lines.length >= 2) {
+        ctx.fillText(grp.lines[0] + ' Sq.ft', cCenterX, subRowY + 27);
+        ctx.fillText(grp.lines[1] + ' Sq.ft', cCenterX, subRowY + 52);
+      }
+    }
+  }
+
+  ctx.fillStyle = '#f8f9fa';
+  ctx.fillRect(boxX, footerY, boxW, footerH);
+  ctx.beginPath(); ctx.moveTo(boxX, footerY); ctx.lineTo(boxX + boxW, footerY);
+  ctx.strokeStyle = '#000'; ctx.lineWidth = 1.0; ctx.stroke();
+
+  ctx.font = 'bold 12.5px Arial'; ctx.textAlign = 'center';
+  ctx.fillStyle = '#b71c1c';
+  ctx.fillText('TOTAL CUTTING AREA = ' + totCut.toFixed(2) + ' Sq.ft', boxX + boxW * 0.3, footerY + 23);
+
+  ctx.fillStyle = '#000';
+  ctx.fillText('|', boxX + boxW * 0.5, footerY + 23);
+
+  ctx.fillStyle = '#004d40';
+  ctx.fillText('TOTAL FILLING AREA = ' + totFill.toFixed(2) + ' Sq.ft', boxX + boxW * 0.7, footerY + 23);
+}
+
+function drawSig(ctx,sigY){
+  var xLeft=10;
+  var totW=PW-20;
+  var sigH=SIG_H;
+  var legW=130;
+  var cols=[
+    {label:'Sub Engineer',sub:(typeof subEng !== 'undefined' ? subEng : '')},
+    {label:'Sub Divisional Officer',sub:(typeof sdoN !== 'undefined' ? sdoN : '')},
+    {label:'Executive Engineer',sub:(typeof xenN !== 'undefined' ? xenN : '')},
+    {label:'Estimate Name:',sub:(typeof projName !== 'undefined' ? projName : '')}
+  ];
+  var remW=totW-legW;
+  var cw3=remW/cols.length;
+
+  ctx.strokeStyle='#000';ctx.lineWidth=0.8;
+  ctx.strokeRect(xLeft,sigY,totW,sigH);
+
+  ctx.fillStyle='#fff';ctx.fillRect(xLeft,sigY,legW,sigH);
+  ctx.beginPath();ctx.moveTo(xLeft+legW,sigY);ctx.lineTo(xLeft+legW,sigY+sigH);
+  ctx.strokeStyle='#000';ctx.lineWidth=0.8;ctx.stroke();
+
+  ctx.font='bold 11.5px Arial';ctx.fillStyle='#000';ctx.textAlign='center';
+  ctx.fillText('LEGEND',xLeft+legW/2,sigY+18);
+
+  ctx.beginPath();ctx.moveTo(xLeft+20,sigY+26);ctx.lineTo(xLeft+legW-20,sigY+26);
+  ctx.strokeStyle='#cccccc';ctx.lineWidth=1.0;ctx.stroke();
+
+  var lineX1 = xLeft + 16;
+  var lineX2 = xLeft + 51;
+  var textX = xLeft + 58;
+
+  ctx.save();
+  ctx.strokeStyle='#b71c1c';ctx.lineWidth=2.2;
+  ctx.beginPath();ctx.moveTo(lineX1,sigY+43);ctx.lineTo(lineX2,sigY+43);ctx.stroke();
+  ctx.restore();
+  ctx.font='bold 10.5px Arial';ctx.fillStyle='#b71c1c';ctx.textAlign='left';
+  ctx.fillText('Design',textX,sigY+46);
+
+  ctx.save();
+  ctx.strokeStyle='#004d40';ctx.lineWidth=2.2;
+  ctx.beginPath();ctx.moveTo(lineX1,sigY+63);ctx.lineTo(lineX2,sigY+63);ctx.stroke();
+  ctx.restore();
+  ctx.font='bold 10.5px Arial';ctx.fillStyle='#004d40';ctx.textAlign='left';
+  ctx.fillText('Existing',textX,sigY+66);
+
+  cols.forEach(function(col,i){
+    var scx=xLeft+legW+i*cw3;
+    ctx.beginPath();ctx.moveTo(scx,sigY);ctx.lineTo(scx,sigY+sigH);
+    ctx.strokeStyle='#000';ctx.lineWidth=0.8;ctx.stroke();
+
+    if (i === 3) {
+      var pName = (col.sub && col.sub.trim()) ? col.sub.trim() : 'CANAL IMPROVEMENT WORKS';
+      var fullText = 'Estimate Name:  ' + pName;
+
+      ctx.font = 'bold 9.5px Arial'; ctx.fillStyle = '#000'; ctx.textAlign = 'left';
+
+      var maxW = cw3 - 20;
+      var words = fullText.split(' ');
+      var lines = [];
+      var line = '';
+
+      for (var w = 0; w < words.length; w++) {
+        var testLine = line + (line ? ' ' : '') + words[w];
+        if (ctx.measureText(testLine).width > maxW && line !== '') {
+          lines.push(line);
+          line = words[w];
+        } else {
+          line = testLine;
+        }
+      }
+      if (line) lines.push(line);
+
+      var lineH = 15;
+      var totalBlockH = lines.length * lineH;
+      var startY = sigY + (sigH - totalBlockH) / 2 + 10;
+
+      for (var lIdx = 0; lIdx < lines.length; lIdx++) {
+        ctx.fillText(lines[lIdx], scx + 10, startY + lIdx * lineH);
+      }
+    } else {
+      ctx.beginPath();ctx.moveTo(scx+15,sigY+42);ctx.lineTo(scx+cw3-15,sigY+42);
+      ctx.strokeStyle='#ccc';ctx.lineWidth=1.5;ctx.stroke();
+
+      ctx.font='bold 8.5px Arial';ctx.fillStyle='#000';ctx.textAlign='center';
+      var hasSub = col.sub && col.sub.trim();
+      var labelY = hasSub ? (sigY + 54) : (sigY + 62);
+      ctx.fillText(col.label, scx+cw3/2, labelY);
+
+      if (hasSub) {
+        ctx.font='7.5px Arial';ctx.fillStyle='#000';ctx.textAlign='center';
+        ctx.fillText(col.sub.trim(), scx+cw3/2, sigY+67);
+      }
+    }
+  });
+}
+
+window.onload=function(){
+  var root=document.getElementById('root');
+  var totalPages=sections.length;
+  for(var pg=0;pg<totalPages;pg++){
+    var pageDiv=document.createElement('div');
+    pageDiv.className='page';
+    var canv=document.createElement('canvas');
+    canv.width=PW;canv.height=PH;
+    canv.style.width=PW+'px';canv.style.height=PH+'px';
+    pageDiv.appendChild(canv);
+    root.appendChild(pageDiv);
+    var ctx=canv.getContext('2d');
+    ctx.fillStyle='#fff';ctx.fillRect(0,0,PW,PH);
+
+    var s1=sections[pg];
+    var sigY = PH - SIG_H - 18;
+    var yTop = 8;
+    var yBot = sigY + SIG_H;
+    var secH = sigY - yTop;
+
+    if(s1)drawOneSec(ctx,s1,yTop,secH);
+    drawSig(ctx, sigY);
+
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 2.0;
+    ctx.strokeRect(10, yTop, PW - 20, yBot - yTop);
+    
+    var now = new Date();
+    var dtStr = now.toLocaleDateString() + ", " + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    ctx.font = '10px Arial'; ctx.fillStyle = '#000'; ctx.textAlign = 'left';
+    ctx.fillText(dtStr, 12, PH - 4);
+    ctx.textAlign = 'right';
+    ctx.fillText((pg+1) + "/" + totalPages, PW - 12, PH - 4);
+  }
+  ${autoPrint ? 'setTimeout(function(){window.print();},1500);' : ''}
+};
+<\/script></body></html>`;
+    return h;
+}
+
+function downloadDXF() {
+    if(processedSections.length===0){alert("Generate karein!");return;}
+    let dxf="0\nSECTION\n2\nHEADER\n9\n$ACADVER\n1\nAC1009\n0\nENDSEC\n0\nSECTION\n2\nTABLES\n0\nTABLE\n2\nLAYER\n70\n3\n0\nLAYER\n2\nEXISTING\n70\n0\n62\n3\n0\nLAYER\n2\nDESIGN\n70\n0\n62\n1\n0\nLAYER\n2\nRD_TEXT\n70\n0\n62\n7\n0\nENDTAB\n0\nENDSEC\n0\nSECTION\n2\nENTITIES\n";
+    processedSections.forEach(s=>{
+        if(s.existing.length>0){dxf+="0\nPOLYLINE\n8\nEXISTING\n66\n1\n70\n1\n";s.existing.forEach(p=>{dxf+=`0\nVERTEX\n8\nEXISTING\n10\n${p.x}\n20\n${p.y}\n`;});dxf+="0\nSEQEND\n";}
+        if(s.design.length>0){dxf+="0\nPOLYLINE\n8\nDESIGN\n66\n1\n70\n1\n";s.design.forEach(p=>{dxf+=`0\nVERTEX\n8\nDESIGN\n10\n${p.x}\n20\n${p.y}\n`;});dxf+="0\nSEQEND\n";}
+        let mX=s.existing.length>0?s.existing[0].x:0,mY=s.existing.length>0?s.existing[0].y+2:0;
+        dxf+=`0\nTEXT\n8\nRD_TEXT\n10\n${mX}\n20\n${mY}\n40\n1.0\n1\nRD: ${s.rd}\n`;
+    });
+    dxf+="0\nENDSEC\n0\nEOF";
+    let b=new Blob([dxf],{type:"application/dxf"});
+    let l=document.createElement("a");
+    l.href=URL.createObjectURL(b);
+    l.download="Canal_XSections.dxf";
+    l.click();
+}
+
+// ── Core Data Processing Functions ───────────────────────────────────────────
+
+function parseLevelBookData(raw) {
+    let l = raw.trim().split('\n');
+    let m = new Map();
+    l.forEach(line => {
+        line = line.trim();
+        if (!line || (line.toLowerCase().includes("rd") && (line.toLowerCase().includes("level") || line.toLowerCase().includes("distance") || line.toLowerCase().includes("offset")))) return;
+        let p = line.split(/[\t, ]+/);
+        if (p.length >= 3) {
+            let rd = p[0].trim();
+            let v1 = parseFloat(p[1]), v2 = parseFloat(p[2]);
+            if (!isNaN(v1) && !isNaN(v2)) {
+                let level = v1, distance = v2;
+                if (Math.abs(v2) > 100 && Math.abs(v1) <= 100) { level = v2; distance = v1; }
+                if (!m.has(rd)) m.set(rd, []);
+                m.get(rd).push({ x: distance, y: level, level: level, distance: distance });
+            }
+        }
+    });
+    return m;
+}
+
+function interpolateY(pts, x) {
+    if(pts.length===0) return 0;
+    if(x<=pts[0].x) return pts[0].y;
+    if(x>=pts[pts.length-1].x) return pts[pts.length-1].y;
+    for(let i=0;i<pts.length-1;i++){
+        if(x>=pts[i].x&&x<=pts[i+1].x){
+            let x1=pts[i].x,y1=pts[i].y,x2=pts[i+1].x,y2=pts[i+1].y;
+            return y1+(y2-y1)*((x-x1)/(x2-x1));
+        }
+    }
+    return 0;
+}
+
+function calculateZoneArea(ex, d, xS, xE) {
+    if(xS===xE) return {cut:0,fill:0};
+    let xP=[xS,xE];
+    ex.forEach(p=>{if(p.x>=xS&&p.x<=xE)xP.push(p.x);});
+    d.forEach(p=>{if(p.x>=xS&&p.x<=xE)xP.push(p.x);});
+    xP.sort((a,b)=>a-b);
+    xP=[...new Set(xP)];
+    let cA=0,fA=0;
+    for(let i=0;i<xP.length-1;i++){
+        let x1=xP[i],x2=xP[i+1],w=x2-x1;
+        if(w===0)continue;
+        let eY1=interpolateY(ex,x1),eY2=interpolateY(ex,x2),dY1=interpolateY(d,x1),dY2=interpolateY(d,x2);
+        let aE=(eY1+eY2)/2,aD=(dY1+dY2)/2,diff=aE-aD,a=Math.abs(diff)*w;
+        if(diff>0)cA+=a; else if(diff<0)fA+=a;
+    }
+    return {cut:cA,fill:fA};
+}
+
+function getValFromCell(cell) {
+    if (!cell) return 0;
+    let inp = cell.querySelector('input');
+    let str = (inp ? inp.value : cell.innerText) || '0';
+    str = String(str).trim();
+    if (str.includes('/')) {
+        let parts = str.split('/');
+        let num = parseFloat(parts[0]), den = parseFloat(parts[1]);
+        if (!isNaN(num) && !isNaN(den) && den !== 0) return num / den;
+    }
+    if (str.includes(':')) {
+        let parts = str.split(':');
+        let num = parseFloat(parts[0]), den = parseFloat(parts[1]);
+        if (!isNaN(num) && !isNaN(den) && den !== 0) return num / den;
+    }
+    return parseFloat(str) || 0;
+}
+
+function getDesignParamsForRD(rd) {
+    let cbH = parseFloat(document.getElementById('slp_cb_h').value) || 1.5;
+    let cbV = parseFloat(document.getElementById('slp_cb_v').value) || 1;
+    let isH = parseFloat(document.getElementById('slp_is_h').value) || 1.5;
+    let isV = parseFloat(document.getElementById('slp_is_v').value) || 1;
+    let dSH = parseFloat(document.getElementById('slp_db_h').value) || 1.5;
+    let dSV = parseFloat(document.getElementById('slp_db_v').value) || 1;
+    let sec = document.getElementById('sectionType') ? document.getElementById('sectionType').value : 'Earthen Section';
+    let fb = 1.50;
+    let fb_fslLining = 1.00;
+    let fb_liningBank = 0.50;
+    if (sec === 'Earthen Section') {
+        fb = parseFloat(document.getElementById('freeboard') ? document.getElementById('freeboard').value : 1.50) || 1.50;
+    } else {
+        fb_fslLining = parseFloat(document.getElementById('fb_fsl_lining') ? document.getElementById('fb_fsl_lining').value : 1.00) || 1.00;
+        fb_liningBank = parseFloat(document.getElementById('fb_lining_bank') ? document.getElementById('fb_lining_bank').value : 0.50) || 0.50;
+        fb = fb_fslLining + fb_liningBank;
+    }
+
+    let bw=32, fsd=4, bl=534.4, dBw=10, dFsd=4, dBl=535;
+    let cT = document.getElementById('canalDesignTable');
+    let rN = 0;
+    let rdStr = String(rd).replace(/\s/g, '');
+    if (rdStr.includes('+')) {
+        let parts = rdStr.split('+');
+        rN = (parseFloat(parts[0]) || 0) * 1000 + (parseFloat(parts[1]) || 0);
+    } else {
+        rN = parseFloat(rdStr.replace(/[^\d.-]/g, '')) || 0;
+    }
+
+    for (let i=1; i<cT.rows.length; i++) {
+        let cells = cT.rows[i].cells;
+        if (cells.length >= 5) {
+            let fRD = getValFromCell(cells[0]), tRD = getValFromCell(cells[1]) || 999999;
+            if (rN >= fRD && rN <= tRD) {
+                let blAtFrom = getValFromCell(cells[2]) || bl;
+                let slope    = cells.length >= 6 ? (getValFromCell(cells[5]) || 0) : 0;
+                // RD-wise bed level: BL drops by slope per unit length
+                bl  = blAtFrom - slope * (rN - fRD);
+                bw  = getValFromCell(cells[3]) || bw;
+                fsd = getValFromCell(cells[4]) || fsd;
+                break;
+            }
+        }
+    }
+
+    let dR = document.getElementById('div_req').value;
+    if (dR === "TRUE") {
+        let dT = document.getElementById('diversionDesignTable');
+        if (dT) {
+            for (let i=1; i<dT.rows.length; i++) {
+                let cells = dT.rows[i].cells;
+                if (cells.length >= 5) {
+                    let fRD = getValFromCell(cells[0]), tRD = getValFromCell(cells[1]) || 999999;
+                    if (rN >= fRD && rN <= tRD) {
+                        let dBlAtFrom = getValFromCell(cells[2]) || dBl;
+                        let dSlope    = cells.length >= 6 ? (getValFromCell(cells[5]) || 0) : 0;
+                        dBl  = dBlAtFrom - dSlope * (rN - fRD);
+                        dBw  = getValFromCell(cells[3]) || dBw;
+                        dFsd = getValFromCell(cells[4]) || dFsd;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    let bL = parseFloat(document.getElementById('bw_left').value)     || 12;
+    let bR = parseFloat(document.getElementById('bw_right').value)    || 17;
+    let bD = parseFloat(document.getElementById('bw_diversion').value)|| 8;
+    let dS = document.getElementById('div_side').value;
+
+    let bermStr  = document.getElementById('bermMultiplier') ? document.getElementById('bermMultiplier').value : "1.5-D";
+    let bermMult = parseFloat(bermStr) || 0;
+    let bermW    = bermMult * fsd;
+
+    let bH  = bw / 2;
+    let fsl = bl + fsd;
+    let bkT = fsl + fb;
+
+    let innerRun = fsd * (isH / isV);
+    let outerUpRun   = fb  * (cbH / cbV);
+    let outerDownRun = 10;
+
+    let lx_end = -(bH + innerRun + bermW + outerUpRun + bL + outerDownRun);
+    let rx_end =  (bH + innerRun + bermW + outerUpRun + bR + outerDownRun);
+
+    let z = {
+        bed: { start: -bH,    end: bH    },
+        lb:  { start: lx_end, end: -bH   },
+        rb:  { start: bH,     end: rx_end},
+        ld:  { start: 0, end: 0 },
+        rd:  { start: 0, end: 0 }
+    };
+
+    let dSR  = dFsd * (dSH / dSV);
+    let dFSL = dBl  + dFsd;
+    let dBkT = dFSL + fb;
+
+    if (dR === "TRUE") {
+        if (dS === "Left")  { let dSx = lx_end;  z.ld = { start: dSx, end: dSx - (2*dSR + dBw + bD) }; }
+        else                { let dSx = rx_end;  z.rd = { start: dSx, end: dSx + (2*dSR + dBw + bD) }; }
+    }
+
+    let dowelReq = document.getElementById('dowel_req') ? document.getElementById('dowel_req').value : "FALSE";
+    let dowelSide = document.getElementById('dowel_side') ? document.getElementById('dowel_side').value : "Left";
+    let dowelTopW = parseFloat(document.getElementById('dowel_top_width') ? document.getElementById('dowel_top_width').value : 1.25);
+    if (isNaN(dowelTopW)) dowelTopW = 1.25;
+    let dowelH = parseFloat(document.getElementById('dowel_height') ? document.getElementById('dowel_height').value : 1.25);
+    if (isNaN(dowelH)) dowelH = 1.25;
+    let dowelSlope = parseFloat(document.getElementById('dowel_slope') ? document.getElementById('dowel_slope').value : 1.5);
+    if (isNaN(dowelSlope)) dowelSlope = 1.5;
+
+    let cName = document.getElementById('canalName') ? document.getElementById('canalName').value : "CANAL NAME";
+
+    return {
+        zones:z,
+        bedWidth:bw, fsd, bedLevel:bl, fsl, bankTop:bkT, freeboard:fb,
+        innerSlopeH:isH, innerSlopeV:isV, innerRun,
+        outerSlopeH:cbH, outerSlopeV:cbV, outerUpRun, outerDownRun,
+        bermMult:bermStr, bermWidth:bermW,
+        divReq:dR, divSide:dS,
+        divBedWidth:dBw, divFsd:dFsd, divBedLevel:dBl,
+        div_fsl:dFSL, div_slopeRun:dSR, div_bankTop:dBkT,
+        bw_left:bL, bw_right:bR, bw_div:bD,
+        dowelReq, dowelSide, dowelTopWidth:dowelTopW, dowelHeight:dowelH, dowelSlope,
+        canalName:cName
+    };
+}
+
+function generateDesignProfile(p) {
+    let bH        = p.bedWidth / 2;
+    let innerRun  = p.innerRun;
+    let outerUp   = p.outerUpRun;
+    let outerDown = p.outerDownRun;
+    let bermW     = p.bermWidth;
+    let pts = [];
+
+    if (p.divReq === "TRUE" && p.divSide === "Left") {
+        let dSx = -(bH + innerRun + bermW + outerUp + p.bw_left);
+        pts.push({x: dSx-(2*p.div_slopeRun+p.divBedWidth+p.bw_div), y: p.div_bankTop});
+        pts.push({x: dSx-(p.div_slopeRun+p.divBedWidth),            y: p.div_fsl    });
+        pts.push({x: dSx-p.div_slopeRun,                             y: p.divBedLevel});
+        pts.push({x: dSx,                                             y: p.div_fsl    });
+        pts.push({x: dSx,                                             y: p.bankTop    });
+    } else {
+        let lx_bankLeft  = -(bH + innerRun + bermW + outerUp + p.bw_left);
+        let lx_outerEnd  = lx_bankLeft - 10;
+        let ly_outerEnd  = p.bankTop - 10 * (p.outerSlopeV / p.outerSlopeH);
+        let lx_bankRight = -(bH + innerRun + bermW + outerUp);
+        let lx_bermLeft  = -(bH + innerRun + bermW);
+        let lx_innerTop  = -(bH + innerRun);
+        let lx_bed       = -bH;
+
+        pts.push({x: lx_outerEnd,  y: ly_outerEnd});
+        pts.push({x: lx_bankLeft,  y: p.bankTop  });
+
+        if (p.dowelReq === "TRUE" && (p.dowelSide === "Left" || p.dowelSide === "Both")) {
+            let dRun = p.dowelHeight * p.dowelSlope;
+            let dw = p.dowelTopWidth;
+            let dh = p.dowelHeight;
+            let dX_toeOuter = lx_bankRight - 2*dRun - dw;
+            let dX_topOuter = lx_bankRight - dRun - dw;
+            let dX_topInner = lx_bankRight - dRun;
+            let dX_toeInner = lx_bankRight;
+            pts.push({x: dX_toeOuter, y: p.bankTop });
+            pts.push({x: dX_topOuter, y: p.bankTop + dh });
+            pts.push({x: dX_topInner, y: p.bankTop + dh });
+            pts.push({x: dX_toeInner, y: p.bankTop });
+        } else {
+            pts.push({x: lx_bankRight, y: p.bankTop   });
+        }
+
+        if (bermW > 0) { pts.push({x: lx_bermLeft, y: p.fsl    }); }
+        pts.push({x: lx_innerTop,  y: p.fsl      });
+        pts.push({x: lx_bed,       y: p.bedLevel  });
+    }
+
+    pts.push({x:  bH, y: p.bedLevel });
+
+    let rx_innerTop  =  bH + innerRun;
+    let rx_bermRight =  bH + innerRun + bermW;
+    let rx_bankLeft  =  bH + innerRun + bermW + outerUp;
+    let rx_bankRight =  bH + innerRun + bermW + outerUp + p.bw_right;
+    let rx_outerEnd  =  rx_bankRight + 10;
+    let ry_outerEnd  =  p.bankTop - 10 * (p.outerSlopeV / p.outerSlopeH);
+
+    pts.push({x: rx_innerTop,  y: p.fsl      });
+    if (bermW > 0) { pts.push({x: rx_bermRight, y: p.fsl  }); }
+    pts.push({x: rx_bankLeft,  y: p.bankTop  });
+
+    if (p.dowelReq === "TRUE" && (p.dowelSide === "Right" || p.dowelSide === "Both")) {
+        let dRun = p.dowelHeight * p.dowelSlope;
+        let dw = p.dowelTopWidth;
+        let dh = p.dowelHeight;
+        let dX_toeInner = rx_bankLeft;
+        let dX_topInner = rx_bankLeft + dRun;
+        let dX_topOuter = dX_topInner + dw;
+        let dX_toeOuter = dX_topOuter + dRun;
+        pts.push({x: dX_toeInner, y: p.bankTop });
+        pts.push({x: dX_topInner, y: p.bankTop + dh });
+        pts.push({x: dX_topOuter, y: p.bankTop + dh });
+        pts.push({x: dX_toeOuter, y: p.bankTop });
+    }
+
+    if (p.divReq === "TRUE" && p.divSide === "Right") {
+        pts.push({x: rx_bankRight, y: p.bankTop  });
+        let dSx = rx_bankRight;
+        pts.push({x: dSx,                                              y: p.div_fsl    });
+        pts.push({x: dSx + p.div_slopeRun,                            y: p.divBedLevel});
+        pts.push({x: dSx + p.div_slopeRun + p.divBedWidth,            y: p.div_fsl    });
+        pts.push({x: dSx + 2*p.div_slopeRun + p.divBedWidth + p.bw_div, y: p.div_bankTop});
+    } else {
+        pts.push({x: rx_bankRight, y: p.bankTop  });
+        pts.push({x: rx_outerEnd,  y: ry_outerEnd});
+    }
+
+    pts.sort((a,b) => a.x - b.x);
+    return pts;
+}
+
+let parsedSurveyMap = new Map();
+let surveyRDList = [];
+let currentRDIndex = 0;
+
+function loadXSectionData() {
+    let r = document.getElementById('existingData').value.trim();
+    if (!r && parsedSurveyMap.size === 0) { alert("Pehle data paste karein ya file upload karein!"); return; }
+    
+    if (r) {
+        let m = parseLevelBookData(r);
+        if (m.size === 0) { alert("Invalid format! Siraf (RD [Tab] Level [Tab] Distance) format me data paste karein."); return; }
+        parsedSurveyMap = m;
+        document.getElementById('existingData').value = '';
+    }
+
+    surveyRDList = Array.from(parsedSurveyMap.keys());
+    if (surveyRDList.length === 0) { alert("Koi survey data nahi mila!"); return; }
+    
+    currentRDIndex = 0;
+    populateRDSelector();
+    renderSingleRDTable();
+    let vbox = document.getElementById('xSectionVerifyBox');
+    if (vbox) vbox.style.display = 'block';
+    saveData();
+    alert(surveyRDList.length + " X-Sections Verified & Loaded!");
+}
+
+function populateRDSelector() {
+    let sel = document.getElementById('rdSelector');
+    if (!sel) return;
+    sel.innerHTML = '';
+    surveyRDList.forEach((rd, i) => {
+        let opt = document.createElement('option');
+        opt.value = i;
+        opt.innerText = rd;
+        if(i===currentRDIndex) opt.selected=true;
+        sel.appendChild(opt);
+    });
+}
+
+function renderSingleRDTable() {
+    let tbody = document.getElementById('singleRDTbody');
+    if (!tbody) return;
+    let rd = surveyRDList[currentRDIndex];
+    if (!rd) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:15px; color:#888; font-style:italic;">No Survey Data Loaded</td></tr>';
+        let rdDisp = document.getElementById('rdCounterInfo');
+        if (rdDisp) rdDisp.innerText = '';
+        return;
+    }
+    let pts = parsedSurveyMap.get(rd) || [];
+    let sorted = [...pts].sort((a,b)=>a.x-b.x);
+    tbody.innerHTML = sorted.map(p => `<tr><td><input type="text" value="${rd}" readonly style="background:var(--bg-color); font-weight:600;"></td><td><input type="text" value="${p.y.toFixed(3)}"></td><td><input type="text" value="${p.x.toFixed(3)}"></td></tr>`).join('');
+    let rdDisp = document.getElementById('rdCounterInfo');
+    if (rdDisp) rdDisp.innerText = '(' + (currentRDIndex+1) + '/' + surveyRDList.length + ')';
+}
+
+function nextRD() {
+    if (currentRDIndex < surveyRDList.length - 1) { currentRDIndex++; renderSingleRDTable(); populateRDSelector(); }
+}
+
+function prevRD() {
+    if (currentRDIndex > 0) { currentRDIndex--; renderSingleRDTable(); populateRDSelector(); }
+}
+
+function jumpToRD(idx) {
+    currentRDIndex = parseInt(idx) || 0;
+    renderSingleRDTable();
+}
+
+function clearSurveyData() {
+    if (confirm("Survey data clear karein?")) {
+        parsedSurveyMap = new Map();
+        surveyRDList = [];
+        currentRDIndex = 0;
+        let tbody = document.getElementById('singleRDTbody');
+        if (tbody) tbody.innerHTML = '';
+        let vbox = document.getElementById('xSectionVerifyBox');
+        if (vbox) vbox.style.display = 'none';
+        alert("Survey data cleared!");
+    }
+}
+
+function processBatch(reRenderOnly) {
+    if (!reRenderOnly) {
+        let r = document.getElementById('existingData').value.trim();
+        let m = (parsedSurveyMap && parsedSurveyMap.size > 0) ? parsedSurveyMap : (r ? parseLevelBookData(r) : new Map());
+        if (m.size === 0) { alert("Existing survey data paste ya load karein!"); return; }
+        let cT = document.getElementById('canalDesignTable');
+        if (cT.rows.length <= 1) { alert("Canal Design Data load karein!"); return; }
+        let dR = document.getElementById('div_req').value;
+        let sec = document.getElementById('sectionType').value;
+        let isDiv = (sec !== "Earthen Section" && dR === "TRUE");
+    
+        if (isDiv) {
+            let dT = document.getElementById('diversionDesignTable');
+            if (dT && dT.rows.length <= 1) { alert("Diversion Data load karein!"); return; }
+        }
+    
+        processedSections = [];
+        for (let [rd, ePts] of m) {
+            ePts.sort((a, b) => a.x - b.x);
+            let dP = getDesignParamsForRD(rd);
+            let dPts = generateDesignProfile(dP);
+            let a = {
+                bed: calculateZoneArea(ePts, dPts, dP.zones.bed.start, dP.zones.bed.end),
+                lb: calculateZoneArea(ePts, dPts, dP.zones.lb.start, dP.zones.lb.end),
+                rb: calculateZoneArea(ePts, dPts, dP.zones.rb.start, dP.zones.rb.end),
+                ld: isDiv ? calculateZoneArea(ePts, dPts, dP.zones.ld.start, dP.zones.ld.end) : {cut:0, fill:0},
+                rd: isDiv ? calculateZoneArea(ePts, dPts, dP.zones.rd.start, dP.zones.rd.end) : {cut:0, fill:0}
+            };
+            processedSections.push({ rd, existing: ePts, design: dPts, areas: a, params: dP });
+        }
+        saveData();
+        alert(processedSections.length + " X-Sections Processed!");
+    }
+    renderReportTable();
+    renderPreviews();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── UI Helper Functions ───────────────────────────────────────────────────────
+
+function toggleTheme() {
+    let isDark = document.body.getAttribute('data-theme') === 'dark';
+    if (isDark) {
+        document.body.removeAttribute('data-theme');
+        document.getElementById('themeBtn').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg> Dark';
+        localStorage.setItem('theme', 'light');
+    } else {
+        document.body.setAttribute('data-theme', 'dark');
+        document.getElementById('themeBtn').innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg> Light';
+        localStorage.setItem('theme', 'dark');
+    }
+}
+
+function updateSlopesTable() {
+    let sec = document.getElementById('sectionType').value;
+    let dR = document.getElementById('div_req') ? document.getElementById('div_req').value : 'FALSE';
+    let isDiv = (dR === "TRUE");
+
+    // Channel banks row label
+    let lbl_cb = document.getElementById('row_slp_cb');
+    let lbl_is = document.getElementById('row_slp_is');
+    let lbl_db = document.getElementById('row_slp_db');
+    if (lbl_cb) lbl_cb.style.display = '';
+    if (lbl_is) {
+        let lblEl = document.getElementById('lbl_slp_is');
+        if (lblEl) lblEl.innerText = 'Inner Slope';
+        lbl_is.style.display = '';
+    }
+    if (lbl_db) lbl_db.style.display = isDiv ? '' : 'none';
+
+    // Freeboard split/single based on section type
+    let fbSingle = document.getElementById('fb_single_container');
+    let fbSplit = document.getElementById('fb_split_container');
+    if (fbSingle && fbSplit) {
+        if (sec === 'Earthen Section') {
+            fbSingle.style.display = 'block';
+            fbSplit.style.display = 'none';
+        } else {
+            fbSingle.style.display = 'none';
+            fbSplit.style.display = 'block';
+        }
+    }
+
+    toggleDiversion();
+}
+
+function toggleDiversion() {
+    let dR = document.getElementById('div_req') ? document.getElementById('div_req').value : 'FALSE';
+    let isDiv = (dR === "TRUE");
+
+    let divSideGroup = document.getElementById('div_side_group');
+    if (divSideGroup) divSideGroup.style.display = isDiv ? '' : 'none';
+
+    let divSecGroup = document.getElementById('diversionSectionGroup');
+    if (divSecGroup) divSecGroup.style.display = isDiv ? '' : 'none';
+
+    // Handle bank-width columns for diversion (Common Bank and Diversion Bank)
+    let bwCommon = document.getElementById('td_bw_common');
+    let bwDiv = document.getElementById('td_bw_diversion');
+    let thCommon = document.getElementById('th_bw_common');
+    let thDiv = document.getElementById('th_bw_diversion');
+
+    if (bwCommon) bwCommon.style.display = isDiv ? '' : 'none';
+    if (bwDiv) bwDiv.style.display = isDiv ? '' : 'none';
+    if (thCommon) thCommon.style.display = isDiv ? '' : 'none';
+    if (thDiv) thDiv.style.display = isDiv ? '' : 'none';
+
+    let slpDb = document.getElementById('row_slp_db');
+    if (slpDb) slpDb.style.display = isDiv ? '' : 'none';
+}
+
+function updateCombinedFreeboard() {
+    let fslLining = parseFloat(document.getElementById('fb_fsl_lining') ? document.getElementById('fb_fsl_lining').value : 1.0) || 1.0;
+    let liningBank = parseFloat(document.getElementById('fb_lining_bank') ? document.getElementById('fb_lining_bank').value : 0.5) || 0.5;
+    let totalFb = fslLining + liningBank;
+    let fbEl = document.getElementById('freeboard');
+    if (fbEl) { fbEl.value = totalFb.toFixed(2); }
+}
+
+function toggleDowel() {
+    let d = document.getElementById('dowel_req') ? document.getElementById('dowel_req').value : 'FALSE';
+    let dowelParamsGroup = document.getElementById('dowel_params_group');
+    if (dowelParamsGroup) { dowelParamsGroup.style.display = (d === 'TRUE') ? 'block' : 'none'; }
+}
+
+function toggleBermWidth() {
+    let req = document.getElementById('berm_req') ? document.getElementById('berm_req').value : 'YES';
+    let grp = document.getElementById('bermMultiplierGroup');
+    if (grp) grp.style.display = (req === 'YES') ? '' : 'none';
+}
+
+function clearAllData() {
+    if (confirm("Sab data delete karein?")) {
+        localStorage.removeItem('canalAppData');
+        location.reload();
+    }
+}
+
+function loadDesignData(pId, tId) {
+    let area = document.getElementById(pId);
+    let t = area.value.trim();
+    if (!t) { alert("Pehle data paste karein ya file upload karein!"); return; }
+    let l = t.split('\n');
+    let tb = document.getElementById(tId);
+    
+    let rowsToInsert = [];
+    let hasError = false;
+
+    for (let line of l) {
+        line = line.trim();
+        if (!line) continue;
+        let lower = line.toLowerCase();
+        if (lower.includes("from rd") || lower.includes("to rd") || lower.includes("bed level") || lower.includes("result")) continue;
+
+        let p = line.split('\t');
+        if (p.length < 6) p = line.split(',');
+        if (p.length < 6) p = line.split(/\s+/);
+
+        if (p.length >= 6) {
+            let fRD = parseFloat(p[0]), tRD = parseFloat(p[1]);
+            if (!isNaN(fRD) && !isNaN(tRD)) {
+                rowsToInsert.push([p[0].trim(), p[1].trim(), p[2].trim(), p[3].trim(), p[4].trim(), p[5].trim()]);
+            } else {
+                hasError = true;
+            }
+        } else {
+            hasError = true;
+        }
+    }
+
+    if (rowsToInsert.length > 0 && !hasError) {
+        while(tb.rows.length > 1) tb.deleteRow(1);
+        rowsToInsert.forEach(vals => {
+            let r = tb.insertRow(-1);
+            for(let i=0; i<6; i++) {
+                r.insertCell(i).innerHTML = `<input type="text" value="${vals[i]}">`;
+            }
+        });
+        area.value = '';
+        saveData();
+        alert("Data Table load ho gaya!");
+    } else {
+        alert("Error: Wrong Data Format!\n\nSiraf 6 columns ki tarteeb ma data paste karein:\n[From RD | To RD | Bed Level | Bed Width | FSD | Slope]");
+    }
+}
+
+function clearCanalDesignData() {
+    let tb = document.getElementById('canalDesignTable');
+    if (tb) {
+        if (confirm("Canal Design Data delete karein?")) {
+            while (tb.rows.length > 1) tb.deleteRow(1);
+            saveData();
+        }
+    }
+}
+
+function handleExcelUpload(e, pId, tId) {
+    const f = e.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = function(ev) {
+        const d = new Uint8Array(ev.target.result);
+        const wb = XLSX.read(d, {type:'array'});
+        const s = wb.Sheets[wb.SheetNames[0]];
+        document.getElementById(pId).value = XLSX.utils.sheet_to_txt(s);
+        loadDesignData(pId, tId);
+    };
+    r.readAsArrayBuffer(f);
+}
+
+function handleSurveyUpload(e, tId) {
+    const f = e.target.files[0];
+    if (!f) return;
+    const r = new FileReader();
+    r.onload = function(ev) {
+        const d = new Uint8Array(ev.target.result);
+        const wb = XLSX.read(d, {type:'array'});
+        const s = wb.Sheets[wb.SheetNames[0]];
+        let txt = XLSX.utils.sheet_to_txt(s);
+        let formatted = txt.split('\n').map(l => {
+            let p = l.trim().split(/[\t, ]+/);
+            if (p.length >= 3) { return p[0] + '\t' + p[1] + '\t' + p[2]; }
+            return l;
+        }).join('\n');
+        document.getElementById(tId).value = formatted;
+        loadXSectionData();
+    };
+    r.readAsArrayBuffer(f);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+window.onload=function(){
+    if(localStorage.getItem('theme')==='dark'){document.body.setAttribute('data-theme','dark');document.getElementById('themeBtn').innerText='☀️ Light';}
+    loadData();
+    updateSlopesTable();
+    toggleDowel();
+    toggleBermWidth();
+    document.body.addEventListener('input',saveData);
+    document.body.addEventListener('change',saveData);
+};
+</script>
+</body>
+</html>
